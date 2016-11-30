@@ -77,7 +77,7 @@ struct diag_cntl_cmd_feature {
 	uint32_t mask_len;
 	uint8_t mask[];
 } __packed;
-#define to_cmd_feature(h) container_of(h, struct diag_cntl_feature, hdr)
+#define to_cmd_feature(h) container_of(h, struct diag_cntl_cmd_feature, hdr)
 
 #define DIAG_CNTL_CMD_NUM_PRESETS 12
 struct diag_cntl_num_presets {
