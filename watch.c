@@ -104,6 +104,29 @@ int watch_add_writeq(int fd, struct list_head *queue)
 	return 0;
 }
 
+void watch_remove_fd(int fd)
+{
+	struct list_head *item;
+	struct list_head *next;
+	struct watch *w;
+
+	list_for_each_safe(item, next, &read_watches) {
+		w = container_of(item, struct watch, node);
+		if (w->fd == fd) {
+			list_del(&w->node);
+			free(w);
+		}
+	}
+
+	list_for_each_safe(item, next, &write_watches) {
+		w = container_of(item, struct watch, node);
+		if (w->fd == fd) {
+			list_del(&w->node);
+			free(w);
+		}
+	}
+}
+
 int watch_add_quit(int (*cb)(int, void*), void *data)
 {
 	struct watch *w;
@@ -235,16 +258,15 @@ void watch_run(void)
 			w = container_of(item, struct watch, node);
 			FD_SET(w->fd, &rfds);
 
-			if (w->fd >= nfds)
-				nfds = w->fd + 1;
+			nfds = MAX(w->fd + 1, nfds);
 		}
 
 		list_for_each(item, &write_watches) {
 			w = container_of(item, struct watch, node);
 			if (!list_empty(w->queue)) {
 				FD_SET(w->fd, &wfds);
-				if (w->fd >= nfds)
-					nfds = w->fd + 1;
+
+				nfds = MAX(w->fd + 1, nfds);
 			}
 		}
 

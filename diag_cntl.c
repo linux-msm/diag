@@ -19,6 +19,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "diag.h"
+#include "diag_cntl.h"
+#include "peripheral.h"
 #include "util.h"
 
 #define __packed __attribute__((packed))
@@ -157,6 +159,8 @@ static int diag_cntl_feature_mask(struct peripheral *peripheral,
 
 	peripheral->features = mask;
 
+	diag_cntl_send_feature_mask(peripheral);
+
 	return 0;
 }
 
@@ -190,7 +194,8 @@ int diag_cntl_recv(int fd, void *data)
 	n = read(fd, buf, sizeof(buf));
 	if (n < 0) {
 		warn("failed to read from cntl channel");
-		return n;
+		peripheral_close(peripheral);
+		return 0;
 	}
 
 	for (;;) {
@@ -223,4 +228,18 @@ int diag_cntl_recv(int fd, void *data)
 	}
 
 	return 0;
+}
+
+void diag_cntl_close(struct peripheral *peripheral)
+{
+	struct list_head *item;
+	struct list_head *next;
+	struct diag_cmd *dc;
+
+	list_for_each_safe(item, next, &diag_cmds) {
+		dc = container_of(item, struct diag_cmd, node);
+		if (dc->peripheral == peripheral)
+			list_del(&dc->node);
+	}
+
 }

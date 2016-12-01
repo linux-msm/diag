@@ -6,6 +6,7 @@
 
 int watch_add_readfd(int fd, int (*cb)(int, void*), void *data);
 int watch_add_writeq(int fd, struct list_head *queue);
+void watch_remove_fd(int fd);
 int watch_add_quit(int (*cb)(int, void*), void *data);
 int watch_add_timer(void (*cb)(void *), void *data,
 		    unsigned int interval, bool repeat);

@@ -5,5 +5,6 @@
 
 int diag_cntl_recv(int fd, void *data);
 void diag_cntl_send_feature_mask(struct peripheral *peripheral);
+void diag_cntl_close(struct peripheral *peripheral);
 
 #endif

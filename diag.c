@@ -19,6 +19,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <libudev.h>
 #include <netdb.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -31,6 +32,7 @@
 #include "diag_cntl.h"
 #include "list.h"
 #include "mbuf.h"
+#include "peripheral.h"
 #include "util.h"
 #include "watch.h"
 
@@ -147,7 +149,7 @@ void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen)
 	list_add(queue, &mbuf->node);
 }
 
-static int diag_data_recv(int fd, void *data)
+int diag_data_recv(int fd, void *data)
 {
 	struct peripheral *peripheral = data;
 	struct diag_client *client;
@@ -159,32 +161,38 @@ static int diag_data_recv(int fd, void *data)
 	size_t len;
 	ssize_t n;
 
-	n = read(fd, buf, sizeof(buf));
-	if (n < 0) {
-		warn("failed to read from data channel");
-		return n;
-	}
-
-	ptr = buf;
-	len = n;
 	for (;;) {
-		if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE) {
-			msg = ptr;
-			msglen = len;
-		} else {
-			msg = hdlc_decode_one(&ptr, &len, &msglen);
-			if (!msg)
+		n = read(fd, buf, sizeof(buf));
+		if (n < 0) {
+			if (errno != EAGAIN) {
+				warn("failed to read from data channel");
+				peripheral_close(peripheral);
+			}
+
+			break;
+		}
+
+		ptr = buf;
+		len = n;
+		for (;;) {
+			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE) {
+				msg = ptr;
+				msglen = len;
+			} else {
+				msg = hdlc_decode_one(&ptr, &len, &msglen);
+				if (!msg)
+					break;
+			}
+
+			list_for_each(item, &diag_clients) {
+				client = container_of(item, struct diag_client, node);
+
+				queue_push(&client->outq, msg, msglen);
+			}
+
+			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
 				break;
 		}
-
-		list_for_each(item, &diag_clients) {
-			client = container_of(item, struct diag_client, node);
-
-			hdlc_enqueue(&client->outq, msg, msglen);
-		}
-
-		if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
-			break;
 	}
 
 	return 0;
@@ -311,8 +319,6 @@ static int diag_sock_recv(int fd, void *data)
 
 int main(int argc, char **argv)
 {
-	struct peripheral *hexagon;
-	struct peripheral *wcnss;
 	struct diag_client *qxdm;
 	int ret;
 
@@ -329,46 +335,7 @@ int main(int argc, char **argv)
 	watch_add_writeq(qxdm->fd, &qxdm->outq);
 	list_add(&diag_clients, &qxdm->node);
 
-	hexagon = malloc(sizeof(*hexagon));
-	memset(hexagon, 0, sizeof(*hexagon));
-	hexagon->name = "hexagon";
-
-	wcnss = malloc(sizeof(*wcnss));
-	memset(wcnss, 0, sizeof(*wcnss));
-	wcnss->name = "wcnss";
-
-	hexagon->cntl_fd = open("/dev/rpmsg/hexagon/DIAG_CNTL", O_RDWR | O_NONBLOCK);
-	if (hexagon->cntl_fd < 0)
-		err(1, "failed to open DIAG_CNTL");
-
-	hexagon->data_fd = open("/dev/rpmsg/hexagon/DIAG", O_RDWR | O_NONBLOCK);
-	if (hexagon->data_fd < 0)
-		err(1, "failed to open DIAG");
-
-	hexagon->cmd_fd = open("/dev/rpmsg/hexagon/DIAG_CMD", O_RDWR | O_NONBLOCK);
-	if (hexagon->cmd_fd < 0)
-		err(1, "failed to open DIAG_CMD");
-
-	wcnss->cntl_fd = open("/dev/rpmsg/pronto/APPS_RIVA_CTRL", O_RDWR | O_NONBLOCK);
-	if (wcnss->cntl_fd < 0)
-		err(1, "failed to open APPS_RIVA_CTRL");
-
-	wcnss->data_fd = open("/dev/rpmsg/pronto/APPS_RIVA_DATA", O_RDWR | O_NONBLOCK);
-	if (wcnss->data_fd < 0)
-		err(1, "failed to open APPS_RIVA_DATA");
-
-	watch_add_readfd(hexagon->cntl_fd, diag_cntl_recv, hexagon);
-	watch_add_writeq(hexagon->cntl_fd, &hexagon->cntlq);
-	watch_add_readfd(hexagon->data_fd, diag_data_recv, hexagon);
-	watch_add_writeq(hexagon->data_fd, &hexagon->dataq);
-
-	watch_add_readfd(wcnss->cntl_fd, diag_cntl_recv, wcnss);
-	watch_add_writeq(wcnss->cntl_fd, &wcnss->cntlq);
-	watch_add_readfd(wcnss->data_fd, diag_data_recv, wcnss);
-	watch_add_writeq(wcnss->data_fd, &wcnss->dataq);
-
-	diag_cntl_send_feature_mask(hexagon);
-	diag_cntl_send_feature_mask(wcnss);
+	peripheral_init();
 
 	watch_run();
 

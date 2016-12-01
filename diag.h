@@ -36,7 +36,9 @@ struct diag_client {
 };
 
 struct peripheral {
-	const char *name;
+	struct list_head  node;
+
+	char *name;
 
 	unsigned long features;
 
@@ -60,5 +62,7 @@ struct diag_cmd {
 void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen);
 
 extern struct list_head diag_cmds;
+
+int diag_data_recv(int fd, void *data);
 
 #endif

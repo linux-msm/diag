@@ -40,4 +40,7 @@ static inline void list_del(struct list_head *item)
 #define list_for_each(item, list) \
 	for (item = (list)->next; item != list; item = item->next)
 
+#define list_for_each_safe(item, next, list) \
+	for (item = (list)->next, next = item->next; item != list; item = next, next = item->next)
+
 #endif

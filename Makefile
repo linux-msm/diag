@@ -1,13 +1,13 @@
 DIAG := diag
 
 CFLAGS := -Wall -g -O2
-LDFLAGS :=
+LDFLAGS := -ludev
 
-SRCS := crc_ccitt.c diag.c diag_cntl.c  mbuf.c util.c watch.c
+SRCS := crc_ccitt.c diag.c diag_cntl.c mbuf.c peripheral.c util.c watch.c
 OBJS := $(SRCS:.c=.o)
 
 $(DIAG): $(OBJS)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 install: $(DIAG)
 	install -D -m 755 $< $(DESTDIR)$(prefix)/bin/$<
