@@ -27,9 +27,9 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "crc_ccitt.h"
 #include "diag.h"
 #include "diag_cntl.h"
+#include "hdlc.h"
 #include "list.h"
 #include "mbuf.h"
 #include "peripheral.h"
@@ -41,7 +41,7 @@ struct list_head diag_clients = LIST_INIT(diag_clients);
 
 static uint8_t *hdlc_encode(uint8_t *src, size_t slen, size_t *dlen)
 {
-	uint16_t crc = CRC_16_L_SEED;
+	uint16_t crc = 0xffff;
 	uint8_t tmp[2];
 	uint8_t *dst;
 	uint8_t *s = src;
@@ -54,7 +54,7 @@ static uint8_t *hdlc_encode(uint8_t *src, size_t slen, size_t *dlen)
 
 	d = dst;
 	while (s < src + slen) {
-		crc = crc_ccitt_byte(crc, *s);
+		crc = hdlc_crc_byte(crc, *s);
 
 		if (*s == 0x7d || *s == 0x7e) {
 			*d++ = 0x7d;
