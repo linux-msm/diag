@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016, Linaro Ltd.
+ * Copyright (c) 2016, Bjorn Andersson <bjorn@kryo.se>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,33 +29,3 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdlib.h>
-#include <string.h>
-#include "mbuf.h"
-
-struct mbuf *mbuf_alloc(size_t size)
-{
-	struct mbuf *mbuf;
-
-	mbuf = malloc(sizeof(*mbuf) + size);
-	if (!mbuf)
-		return NULL;
-
-	memset(mbuf, 0, sizeof(*mbuf));
-	mbuf->size = size;
-
-	return mbuf;
-}
-
-void *mbuf_put(struct mbuf *mbuf, size_t size)
-{
-	void *ptr;
-
-	if (mbuf->offset + size > mbuf->size)
-		return NULL;
-
-	ptr = mbuf->data + mbuf->offset;
-	mbuf->offset += size;
-
-	return ptr;
-}

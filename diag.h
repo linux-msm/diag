@@ -5,17 +5,6 @@
 
 #define BIT(x) (1 << (x))
 
-/*
- * Feature Mask Definitions: Feature mask is used to specify Diag features
- * supported by the Apps processor
- *
- * F_DIAG_FEATURE_MASK_SUPPORT - Denotes we support sending and receiving
- *                               feature masks
- * F_DIAG_LOG_ON_DEMAND_APPS - Apps responds to Log on Demand request
- * F_DIAG_REQ_RSP_SUPPORT - Apps supported dedicated request response Channel
- * F_DIAG_APPS_HDLC_ENCODE - HDLC encoding is done on the forward channel
- * F_DIAG_STM - Denotes Apps supports Diag over STM
- */
 #define DIAG_FEATURE_FEATURE_MASK_SUPPORT	BIT(0)
 #define DIAG_FEATURE_LOG_ON_DEMAND_APPS		BIT(2)
 #define DIAG_FEATURE_REQ_RSP_SUPPORT		BIT(4)
