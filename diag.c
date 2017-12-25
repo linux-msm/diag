@@ -352,7 +352,7 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
-	struct diag_client *qxdm;
+	struct diag_client *client;
 	char *host_address = "";
 	int host_port = DEFAULT_SOCKET_PORT;
 	char *token;
@@ -377,18 +377,18 @@ int main(int argc, char **argv)
 		}
 	}
 
-	qxdm = malloc(sizeof(*qxdm));
-	memset(qxdm, 0, sizeof(*qxdm));
+	client = malloc(sizeof(*client));
+	memset(client, 0, sizeof(*client));
 
 	ret = diag_sock_connect(host_address, host_port);
 	if (ret < 0)
-		err(1, "failed to connect to qxdm");
-	qxdm->fd = ret;
-	qxdm->name = "QXDM";
+		err(1, "failed to connect to client");
+	client->fd = ret;
+	client->name = "DIAG CLIENT";
 
-	watch_add_readfd(ret, diag_sock_recv, qxdm);
-	watch_add_writeq(qxdm->fd, &qxdm->outq);
-	list_add(&diag_clients, &qxdm->node);
+	watch_add_readfd(ret, diag_sock_recv, client);
+	watch_add_writeq(client->fd, &client->outq);
+	list_add(&diag_clients, &client->node);
 
 	peripheral_init();
 
