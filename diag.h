@@ -89,5 +89,7 @@ int diag_cmd_recv(int fd, void *data);
 int diag_data_recv(int fd, void *data);
 
 int diag_sock_connect(const char *hostname, unsigned short port);
+int diag_sock_recv(int fd, void* data);
+int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len);
 
 #endif

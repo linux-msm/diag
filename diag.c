@@ -211,32 +211,13 @@ static void diag_rsp_bad_command(struct diag_client *client,
 	free(buf);
 }
 
-static int diag_sock_recv(int fd, void *data)
+int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len)
 {
-	struct diag_client *client = data;
-	uint8_t buf[4096];
-	size_t msglen;
-	size_t len;
-	ssize_t n;
-	void *msg;
-	void *ptr;
 	int ret;
 
-	n = read(fd, buf, sizeof(buf));
-	if (n < 0)
-		return n;
-
-	ptr = buf;
-	len = n;
-	for (;;) {
-		msg = hdlc_decode_one(&ptr, &len, &msglen);
-		if (!msg)
-			break;
-
-		ret = diag_cmd_dispatch(client, msg, msglen);
-		if (ret < 0)
-			diag_rsp_bad_command(client, msg, msglen);
-	}
+	ret = diag_cmd_dispatch(client, data, len);
+	if (ret < 0)
+		diag_rsp_bad_command(client, data, len);
 
 	return 0;
 }
