@@ -58,22 +58,18 @@
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 struct list_head diag_clients = LIST_INIT(diag_clients);
 
+void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen);
+
 static int hdlc_enqueue(struct list_head *queue, uint8_t *msg, size_t msglen)
 {
-	struct mbuf *mbuf;
 	uint8_t *outbuf;
 	size_t outlen;
-	void *ptr;
 
 	outbuf = hdlc_encode(msg, msglen, &outlen);
 	if (!outbuf)
 		err(1, "failed to allocate hdlc destination buffer");
 
-	mbuf = mbuf_alloc(outlen);
-	ptr = mbuf_put(mbuf, outlen);
-	memcpy(ptr, outbuf, outlen);
-
-	list_add(queue, &mbuf->node);
+	queue_push(queue, outbuf, outlen);
 
 	return 0;
 }
