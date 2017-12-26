@@ -187,7 +187,8 @@ static int diag_sock_connect(const char *hostname, unsigned short port)
 	return fd;
 }
 
-static int diag_cmd_dispatch(uint8_t *ptr, size_t len)
+static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
+			     size_t len)
 {
 	struct peripheral *peripheral;
 	struct list_head *item;
@@ -205,6 +206,10 @@ static int diag_cmd_dispatch(uint8_t *ptr, size_t len)
 		key = ptr[0] << 24 | ptr[1] << 16 | ptr[3] << 8 | ptr[2];
 	else
 		key = 0xff << 24 | 0xff << 16 | ptr[0];
+
+	if (key == 0x4b320003) {
+		return hdlc_enqueue(&client->outq, ptr, len);
+	}
 
 	list_for_each(item, &diag_cmds) {
 		dc = container_of(item, struct diag_cmd, node);
@@ -265,7 +270,7 @@ static int diag_sock_recv(int fd, void *data)
 		if (!msg)
 			break;
 
-		ret = diag_cmd_dispatch(msg, msglen);
+		ret = diag_cmd_dispatch(client, msg, msglen);
 		if (ret < 0)
 			diag_rsp_bad_command(client, msg, msglen);
 	}
