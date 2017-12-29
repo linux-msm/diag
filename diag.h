@@ -49,6 +49,7 @@
 #define DIAG_FEATURE_SOCKETS_ENABLED		BIT(13)
 
 #define DIAG_CMD_SUBSYS_DISPATCH       75
+#define DIAG_CMD_SUBSYS_DISPATCH_V2	128
 
 struct diag_client {
 	const char *name;

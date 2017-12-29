@@ -66,7 +66,8 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 	unsigned int key;
 	int handled = 0;
 
-	if (ptr[0] == DIAG_CMD_SUBSYS_DISPATCH)
+	if (ptr[0] == DIAG_CMD_SUBSYS_DISPATCH ||
+	    ptr[0] == DIAG_CMD_SUBSYS_DISPATCH_V2)
 		key = ptr[0] << 24 | ptr[1] << 16 | ptr[3] << 8 | ptr[2];
 	else
 		key = 0xff << 24 | 0xff << 16 | ptr[0];
