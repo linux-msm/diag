@@ -39,6 +39,10 @@
 #include "hdlc.h"
 #include "util.h"
 
+#define DIAG_CMD_RSP_BAD_COMMAND			0x13
+#define DIAG_CMD_RSP_BAD_PARAMS				0x14
+#define DIAG_CMD_RSP_BAD_LENGTH				0x15
+
 static int hdlc_enqueue(struct list_head *queue, uint8_t *msg, size_t msglen)
 {
 	uint8_t *outbuf;
@@ -89,8 +93,8 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 	return handled ? 0 : -ENOENT;
 }
 
-static void diag_rsp_bad_command(struct diag_client *client,
-				 uint8_t *msg, size_t len)
+static void diag_rsp_bad_command(struct diag_client *client, uint8_t *msg,
+				 size_t len, int error_code)
 {
 	uint8_t *buf;
 
@@ -98,7 +102,7 @@ static void diag_rsp_bad_command(struct diag_client *client,
 	if (!buf)
 		err(1, "failed to allocate error buffer");
 
-	buf[0] = 0x13;
+	buf[0] = error_code;
 	memcpy(buf + 1, msg, len);
 
 	hdlc_enqueue(&client->outq, buf, len + 1);
@@ -111,8 +115,20 @@ int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t
 	int ret;
 
 	ret = diag_cmd_dispatch(client, data, len);
-	if (ret < 0)
-		diag_rsp_bad_command(client, data, len);
+
+	switch (ret) {
+	case -ENOENT:
+		diag_rsp_bad_command(client, data, len, DIAG_CMD_RSP_BAD_COMMAND);
+		break;
+	case -EINVAL:
+		diag_rsp_bad_command(client, data, len, DIAG_CMD_RSP_BAD_PARAMS);
+		break;
+	case -EMSGSIZE:
+		diag_rsp_bad_command(client, data, len, DIAG_CMD_RSP_BAD_LENGTH);
+		break;
+	default:
+		break;
+	}
 
 	return 0;
 }
