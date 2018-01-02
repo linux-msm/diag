@@ -32,6 +32,8 @@
 #ifndef __DIAG_H__
 #define __DIAG_H__
 
+#include <stdint.h>
+
 #include "list.h"
 
 #define DEFAULT_SOCKET_PORT 2500
@@ -83,6 +85,7 @@ struct diag_cmd {
 	unsigned int last;
 
 	struct peripheral *peripheral;
+	int(*cb)(struct diag_client *client, const void *buf, size_t len);
 };
 
 void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen);
@@ -98,5 +101,13 @@ int diag_usb_open(const char *usbname, const char *serial);
 
 void diag_client_add(struct diag_client *client);
 int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len);
+
+int hdlc_enqueue(struct list_head *queue, const void *buf, size_t msglen);
+
+void register_subsys_cmd(unsigned int subsys, unsigned int cmd,
+			 int(*cb)(struct diag_client *client,
+				  const void *buf, size_t len));
+
+void register_app_cmds(void);
 
 #endif

@@ -43,10 +43,10 @@
 #define DIAG_CMD_RSP_BAD_PARAMS				0x14
 #define DIAG_CMD_RSP_BAD_LENGTH				0x15
 
-static int hdlc_enqueue(struct list_head *queue, uint8_t *msg, size_t msglen)
+int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
 {
-	uint8_t *outbuf;
 	size_t outlen;
+	void *outbuf;
 
 	outbuf = hdlc_encode(msg, msglen, &outlen);
 	if (!outbuf)
@@ -72,10 +72,6 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 	else
 		key = 0xff << 24 | 0xff << 16 | ptr[0];
 
-	if (key == 0x4b320003) {
-		return hdlc_enqueue(&client->outq, ptr, len);
-	}
-
 	list_for_each(item, &diag_cmds) {
 		dc = container_of(item, struct diag_cmd, node);
 		if (key < dc->first || key > dc->last)
@@ -83,8 +79,10 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 
 		peripheral = dc->peripheral;
 
-		if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
-			queue_push(&peripheral->dataq, ptr, len);
+		if (dc->cb)
+			dc->cb(client, ptr, len);
+		else if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
+			queue_push(&dc->peripheral->dataq, ptr, len);
 		else
 			hdlc_enqueue(&dc->peripheral->dataq, ptr, len);
 
@@ -132,4 +130,40 @@ int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t
 	}
 
 	return 0;
+}
+
+void register_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
+					     const void *buf, size_t len))
+{
+	struct diag_cmd *dc;
+	unsigned int key = 0xffff0000 | cmd;
+
+	dc = calloc(1, sizeof(*dc));
+	if (!dc)
+		err(1, "failed to allocate diag command\n");
+
+	dc->first = key;
+	dc->last = key;
+	dc->cb = cb;
+
+	list_add(&diag_cmds, &dc->node);
+}
+
+void register_subsys_cmd(unsigned int subsys, unsigned int cmd,
+			 int(*cb)(struct diag_client *client,
+				  const void *buf, size_t len))
+{
+	struct diag_cmd *dc;
+	unsigned int key = DIAG_CMD_SUBSYS_DISPATCH << 24 |
+			   (subsys & 0xff) << 16 | cmd;
+
+	dc = calloc(1, sizeof(*dc));
+	if (!dc)
+		err(1, "failed to allocate diag command\n");
+
+	dc->first = key;
+	dc->last = key;
+	dc->cb = cb;
+
+	list_add(&diag_cmds, &dc->node);
 }

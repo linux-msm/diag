@@ -3,7 +3,8 @@ DIAG := diag
 CFLAGS := -Wall -g -O2
 LDFLAGS := -ludev
 
-SRCS := diag.c \
+SRCS := app_cmds.c \
+	diag.c \
 	diag_cntl.c \
 	hdlc.c \
 	mbuf.c \

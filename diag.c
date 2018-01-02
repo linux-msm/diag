@@ -210,6 +210,8 @@ int main(int argc, char **argv)
 
 	peripheral_init();
 
+	register_app_cmds();
+
 	watch_run();
 
 	return 0;
