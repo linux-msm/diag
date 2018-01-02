@@ -29,13 +29,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <errno.h>
 #include <stdlib.h>
 
 #include "diag.h"
 #include "hdlc.h"
+#include "util.h"
 
 #define DIAG_CMD_KEEP_ALIVE_SUBSYS	50
 #define DIAG_CMD_KEEP_ALIVE_CMD		3
+
+#define DIAG_CMD_DIAG_VERSION_ID	28
+#define DIAG_PROTOCOL_VERSION_NUMBER	2
+
+static int handle_diag_version(struct diag_client *client, const void *buf,
+			       size_t len)
+{
+	struct {
+		uint8_t cmd_code;
+		uint8_t ver;
+	} __packed resp;
+
+	if (len != sizeof(uint8_t))
+		return -EMSGSIZE;
+
+	resp.cmd_code = *(uint8_t*)buf;
+	resp.ver = DIAG_PROTOCOL_VERSION_NUMBER;
+
+	return hdlc_enqueue(&client->outq, &resp, sizeof(resp));
+}
 
 static int handle_keep_alive(struct diag_client *client, const void *buf,
 			     size_t len)
@@ -45,6 +67,7 @@ static int handle_keep_alive(struct diag_client *client, const void *buf,
 
 void register_app_cmds(void)
 {
+	register_cmd(DIAG_CMD_DIAG_VERSION_ID, handle_diag_version);
 	register_subsys_cmd(DIAG_CMD_KEEP_ALIVE_SUBSYS, DIAG_CMD_KEEP_ALIVE_CMD,
 			    handle_keep_alive);
 }
