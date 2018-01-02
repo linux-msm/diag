@@ -29,8 +29,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <err.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "diag.h"
 #include "hdlc.h"
@@ -41,6 +43,12 @@
 
 #define DIAG_CMD_DIAG_VERSION_ID	28
 #define DIAG_PROTOCOL_VERSION_NUMBER	2
+
+#define DIAG_CMD_EXTENDED_BUILD_ID	124
+#define MOBILE_MODEL_NUMBER		0
+#define MOBILE_SOFTWARE_REVISION	"OE"
+#define MOBILE_MODEL_STRING		"DB410C"
+#define MSM_REVISION_NUMBER		2
 
 static int handle_diag_version(struct diag_client *client, const void *buf,
 			       size_t len)
@@ -59,6 +67,41 @@ static int handle_diag_version(struct diag_client *client, const void *buf,
 	return hdlc_enqueue(&client->outq, &resp, sizeof(resp));
 }
 
+static int handle_extended_build_id(struct diag_client *client,
+				    const void *buf, size_t len)
+{
+	struct {
+		uint8_t cmd_code;
+		uint8_t ver;
+		uint16_t reserved;
+		uint32_t msm_rev;
+		uint32_t mobile_model_number;
+		char strings[];
+	} __packed *resp;
+	size_t resp_size;
+	size_t string1_size = strlen(MOBILE_SOFTWARE_REVISION) + 1;
+	size_t string2_size = strlen(MOBILE_MODEL_STRING) + 1;
+	size_t strings_size = string1_size + string2_size;
+
+	if (len != sizeof(uint8_t))
+		return -EMSGSIZE;
+
+	resp_size = sizeof(*resp) + strings_size;
+	resp = malloc(resp_size);
+	if (!resp)
+		err(1, "failed to allocate build id response\n");
+
+	memset(resp, 0, resp_size);
+	resp->cmd_code = *(uint8_t*)buf;
+	resp->ver = DIAG_PROTOCOL_VERSION_NUMBER;
+	resp->msm_rev = MSM_REVISION_NUMBER;
+	resp->mobile_model_number = MOBILE_MODEL_NUMBER;
+	strncpy(resp->strings, MOBILE_SOFTWARE_REVISION, string1_size);
+	strncpy(resp->strings + string1_size, MOBILE_MODEL_STRING, string2_size);
+
+	return hdlc_enqueue(&client->outq, resp, resp_size);
+}
+
 static int handle_keep_alive(struct diag_client *client, const void *buf,
 			     size_t len)
 {
@@ -68,6 +111,7 @@ static int handle_keep_alive(struct diag_client *client, const void *buf,
 void register_app_cmds(void)
 {
 	register_cmd(DIAG_CMD_DIAG_VERSION_ID, handle_diag_version);
+	register_cmd(DIAG_CMD_EXTENDED_BUILD_ID, handle_extended_build_id);
 	register_subsys_cmd(DIAG_CMD_KEEP_ALIVE_SUBSYS, DIAG_CMD_KEEP_ALIVE_CMD,
 			    handle_keep_alive);
 }
