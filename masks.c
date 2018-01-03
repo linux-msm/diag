@@ -588,11 +588,10 @@ int diag_cmd_update_event_mask(uint16_t num_bits, const uint8_t *mask)
 	return 0;
 }
 
-void diag_cmd_toggle_events(uint8_t operation)
+void diag_cmd_toggle_events(bool enabled)
 {
-	if (operation == DIAG_CTRL_MASK_ALL_DISABLED) {
-		memset(event_mask.ptr, 0xFF, event_mask.mask_len);
-	} else if (operation == DIAG_CTRL_MASK_ALL_ENABLED) {
+	if (enabled)
 		memset(event_mask.ptr, 0x00, event_mask.mask_len);
-	}
+	else
+		memset(event_mask.ptr, 0xff, event_mask.mask_len);
 }

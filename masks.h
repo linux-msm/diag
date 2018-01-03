@@ -144,6 +144,6 @@ void diag_cmd_set_all_msg_mask(uint32_t mask);
 uint8_t diag_get_event_mask_status();
 int diag_cmd_get_event_mask(uint16_t num_bits, uint8_t **mask);
 int diag_cmd_update_event_mask(uint16_t num_bits, const uint8_t *mask);
-void diag_cmd_toggle_events(uint8_t operation);
+void diag_cmd_toggle_events(bool enabled);
 
 #endif /* MASKS_H_ */

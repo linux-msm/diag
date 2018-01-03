@@ -71,6 +71,8 @@ struct diag_log_cmd_mask {
 
 #define DIAG_CMD_SET_MASK	0x82
 
+#define DIAG_CMD_EVENT_REPORT_CONTROL	0x60
+
 static int handle_logging_configuration(struct diag_client *client,
 					const void *buf, size_t len)
 {
@@ -540,10 +542,37 @@ static int handle_event_set_mask(struct diag_client *client,
 	return 0;
 }
 
+static int handle_event_report_control(struct diag_client *client,
+				       const void *buf, size_t len)
+{
+	const struct {
+		uint8_t cmd_code;
+		uint8_t operation_switch;
+	} __packed *req = buf;
+	struct {
+		uint8_t cmd_code;
+		uint16_t length;
+	} __packed pkt;
+
+	if (sizeof(*req) != len)
+		return -EMSGSIZE;
+
+	diag_cmd_toggle_events(!!req->operation_switch);
+	peripheral_broadcast_event_mask();
+
+	pkt.cmd_code = DIAG_CMD_EVENT_REPORT_CONTROL;
+	pkt.length = 0;
+
+	hdlc_enqueue(&client->outq, &pkt, sizeof(pkt));
+
+	return 0;
+}
+
 void register_common_cmds(void)
 {
 	register_common_cmd(DIAG_CMD_LOGGING_CONFIGURATION, handle_logging_configuration);
 	register_common_cmd(DIAG_CMD_EXTENDED_MESSAGE_CONFIGURATION, handle_extended_message_configuration);
 	register_common_cmd(DIAG_CMD_GET_MASK, handle_event_get_mask);
 	register_common_cmd(DIAG_CMD_SET_MASK, handle_event_set_mask);
+	register_common_cmd(DIAG_CMD_EVENT_REPORT_CONTROL, handle_event_report_control);
 }
