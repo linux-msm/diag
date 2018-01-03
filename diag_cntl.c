@@ -73,7 +73,7 @@ struct diag_cntl_hdr {
 	uint32_t len;
 };
 
-struct cmd_range {
+struct cmd_range_reg {
 	uint16_t first;
 	uint16_t last;
 	uint32_t data;
@@ -87,7 +87,7 @@ struct diag_cntl_cmd_reg {
 	uint16_t subsys;
 	uint16_t count_entries;
 	uint16_t port;
-	struct cmd_range ranges[];
+	struct cmd_range_reg ranges[];
 } __packed;
 #define to_cmd_reg(h) container_of(h, struct diag_cntl_cmd_reg, hdr)
 
@@ -136,6 +136,22 @@ struct diag_cntl_num_presets {
 	struct diag_cntl_hdr hdr;
 	uint8_t num;
 };
+
+struct cmd_range_dereg {
+	uint16_t first;
+	uint16_t last;
+};
+
+#define DIAG_CNTL_CMD_DEREGISTER	27
+struct diag_cntl_cmd_dereg {
+	struct diag_cntl_hdr hdr;
+	uint32_t version;
+	uint16_t cmd;
+	uint16_t subsys;
+	uint16_t count_entries;
+	struct cmd_range_dereg ranges[];
+} __packed;
+#define to_cmd_dereg(h) container_of(h, struct diag_cntl_cmd_dereg, hdr)
 
 static int diag_cntl_register(struct peripheral *peripheral,
 			      struct diag_cntl_hdr *hdr, size_t len)
@@ -368,6 +384,40 @@ void diag_cntl_send_event_mask(struct peripheral *peripheral)
 	free(pkt);
 }
 
+static int diag_cntl_deregister(struct peripheral *peripheral,
+			      struct diag_cntl_hdr *hdr, size_t len)
+{
+	struct diag_cntl_cmd_dereg *pkt = to_cmd_dereg(hdr);
+	struct diag_cmd *dc;
+	unsigned int subsys;
+	unsigned int cmd;
+	unsigned int first;
+	unsigned int last;
+	int i;
+	struct list_head *item;
+	struct list_head *next;
+
+	for (i = 0; i < pkt->count_entries; i++) {
+		cmd = pkt->cmd;
+		subsys = pkt->subsys;
+
+		if (cmd == 0xff && subsys != 0xff)
+			cmd = DIAG_CMD_SUBSYS_DISPATCH;
+
+		first = cmd << 24 | subsys << 16 | pkt->ranges[i].first;
+		last = cmd << 24 | subsys << 16 | pkt->ranges[i].last;
+
+		list_for_each_safe(item, next, &diag_cmds) {
+			dc = container_of(item, struct diag_cmd, node);
+			if (dc->peripheral == peripheral && dc->first == first && dc->last == last) {
+				list_del(&dc->node);
+			}
+		}
+	}
+
+	return 0;
+}
+
 void diag_cntl_send_feature_mask(struct peripheral *peripheral)
 {
 	struct diag_cntl_cmd_feature *pkt;
@@ -432,6 +482,9 @@ int diag_cntl_recv(int fd, void *data)
 			diag_cntl_feature_mask(peripheral, hdr, n);
 			break;
 		case DIAG_CNTL_CMD_NUM_PRESETS:
+			break;
+		case DIAG_CNTL_CMD_DEREGISTER:
+			diag_cntl_deregister(peripheral, hdr, n);
 			break;
 		default:
 			warnx("[%s] unsupported control packet: %d",
