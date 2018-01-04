@@ -112,6 +112,9 @@ void register_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
 void register_subsys_cmd(unsigned int subsys, unsigned int cmd,
 			 int(*cb)(struct diag_client *client,
 				  const void *buf, size_t len));
+void register_common_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
+						    const void *buf,
+						    size_t len));
 
 void register_app_cmds(void);
 

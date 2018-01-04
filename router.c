@@ -43,6 +43,8 @@
 #define DIAG_CMD_RSP_BAD_PARAMS				0x14
 #define DIAG_CMD_RSP_BAD_LENGTH				0x15
 
+struct list_head common_cmds = LIST_INIT(common_cmds);
+
 int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
 {
 	size_t outlen;
@@ -71,6 +73,14 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 		key = ptr[0] << 24 | ptr[1] << 16 | ptr[3] << 8 | ptr[2];
 	else
 		key = 0xff << 24 | 0xff << 16 | ptr[0];
+
+	list_for_each(item, &common_cmds) {
+		dc = container_of(item, struct diag_cmd, node);
+		if (key < dc->first || key > dc->last)
+			continue;
+
+		return dc->cb(client, ptr, len);
+	}
 
 	list_for_each(item, &diag_cmds) {
 		dc = container_of(item, struct diag_cmd, node);
@@ -166,4 +176,22 @@ void register_subsys_cmd(unsigned int subsys, unsigned int cmd,
 	dc->cb = cb;
 
 	list_add(&diag_cmds, &dc->node);
+}
+
+void register_common_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
+						    const void *buf,
+						    size_t len))
+{
+	struct diag_cmd *dc;
+	unsigned int key = 0xffff0000 | cmd;
+
+	dc = calloc(1, sizeof(*dc));
+	if (!dc)
+		err(1, "failed to allocate diag command\n");
+
+	dc->first = key;
+	dc->last = key;
+	dc->cb = cb;
+
+	list_add(&common_cmds, &dc->node);
 }
