@@ -188,6 +188,9 @@ static void peripheral_open(void *data)
 	watch_add_readfd(peripheral->data_fd, diag_data_recv, peripheral);
 	if (peripheral->cmd_fd >= 0)
 		watch_add_readfd(peripheral->cmd_fd, diag_cmd_recv, peripheral);
+
+	/* Send current message mask to the newly found peripheral */
+	diag_cntl_send_masks(peripheral);
 }
 
 static int peripheral_create(const char *name)

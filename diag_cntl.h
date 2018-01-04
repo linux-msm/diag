@@ -42,4 +42,6 @@ void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_ran
 void diag_cntl_send_event_mask(struct peripheral *peripheral);
 void diag_cntl_close(struct peripheral *peripheral);
 
+void diag_cntl_send_masks(struct peripheral *peripheral);
+
 #endif

@@ -313,6 +313,19 @@ void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_ran
 	free(pkt);
 }
 
+void diag_cntl_send_masks(struct peripheral *peripheral)
+{
+	struct diag_ssid_range_t range;
+	int i;
+
+	for (i = 0; i < MSG_MASK_TBL_CNT; i++) {
+		range.ssid_first = ssid_first_arr[i];
+		range.ssid_last = ssid_last_arr[i];
+
+		diag_cntl_send_msg_mask(peripheral, &range);
+	}
+}
+
 void diag_cntl_send_event_mask(struct peripheral *peripheral)
 {
 	struct diag_cntl_cmd_event_mask *pkt;
