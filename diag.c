@@ -45,7 +45,7 @@
 #include "util.h"
 #include "watch.h"
 
-#define APPS_BUF_SIZE 4096
+#define APPS_BUF_SIZE 16384
 
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 struct list_head diag_clients = LIST_INIT(diag_clients);

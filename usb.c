@@ -62,7 +62,10 @@
 #define cpu_to_le16(x)		(x)
 #define cpu_to_le32(x)		(x)
 
-#define APPS_BUF_SIZE		4096
+#define cpu_to_le16(x)		(x)
+#define cpu_to_le32(x)		(x)
+
+#define APPS_BUF_SIZE		16384
 
 struct func_desc {
 	struct usb_interface_descriptor intf;

@@ -40,7 +40,7 @@
 #include "hdlc.h"
 #include "watch.h"
 
-#define APPS_BUF_SIZE 4096
+#define APPS_BUF_SIZE 16384
 
 static unsigned int check_baudrate(unsigned int baudrate)
 {

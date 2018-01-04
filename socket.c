@@ -47,7 +47,7 @@
 #include "hdlc.h"
 #include "watch.h"
 
-#define APPS_BUF_SIZE 4096
+#define APPS_BUF_SIZE 16384
 
 static int diag_sock_recv(int fd, void* data);
 

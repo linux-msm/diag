@@ -37,7 +37,7 @@
 #include "peripheral.h"
 #include "util.h"
 
-#define APPS_BUF_SIZE 4096
+#define APPS_BUF_SIZE 16384
 
 struct diag_mask_info {
 	void *ptr;
