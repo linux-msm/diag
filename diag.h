@@ -35,6 +35,7 @@
 #include "list.h"
 
 #define DEFAULT_SOCKET_PORT 2500
+#define DEFAULT_BAUD_RATE 115200
 
 #define BIT(x) (1 << (x))
 
@@ -89,6 +90,7 @@ int diag_cmd_recv(int fd, void *data);
 int diag_data_recv(int fd, void *data);
 
 int diag_sock_connect(const char *hostname, unsigned short port);
+int diag_uart_open(const char *uartname, unsigned int baudrate);
 
 void diag_client_add(struct diag_client *client);
 int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len);

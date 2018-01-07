@@ -232,25 +232,32 @@ static void usage(void)
 	fprintf(stderr,
 		"User space application for diag interface\n"
 		"\n"
-		"usage: diag [-hs]\n"
+		"usage: diag [-hsu]\n"
 		"\n"
 		"options:\n"
 		"   -h   show this usage\n"
 		"   -s   <socket address[:port]>\n"
+		"   -u   <uart device name[@baudrate]>\n"
 	);
+
 	exit(1);
 }
 
 int main(int argc, char **argv)
 {
-	char *host_address = "";
+	char *host_address = NULL;
 	int host_port = DEFAULT_SOCKET_PORT;
+	char *uartdev = NULL;
+	int baudrate = DEFAULT_BAUD_RATE;
 	char *token;
 	int ret;
 	int c;
 
+	if (argc == 1)
+		usage();
+
 	for (;;) {
-		c = getopt(argc, argv, "hs:");
+		c = getopt(argc, argv, "hs:u:");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -260,6 +267,12 @@ int main(int argc, char **argv)
 			if (token)
 				host_port = atoi(token);
 			break;
+		case 'u':
+			uartdev = strtok(strdup(optarg), "@");
+			token = strtok(NULL, "");
+			if (token)
+				baudrate = atoi(token);
+			break;
 		default:
 		case 'h':
 			usage();
@@ -267,9 +280,17 @@ int main(int argc, char **argv)
 		}
 	}
 
-	ret = diag_sock_connect(host_address, host_port);
-	if (ret < 0)
-		err(1, "failed to connect to client");
+	if (host_address) {
+		ret = diag_sock_connect(host_address, host_port);
+		if (ret < 0)
+			err(1, "failed to connect to client");
+	} else if (uartdev) {
+		ret = diag_uart_open(uartdev, baudrate);
+		if (ret < 0)
+			errx(1, "failed to open uart\n");
+	} else {
+		errx(1, "no configured connection mode\n");
+	}
 
 	peripheral_init();
 
