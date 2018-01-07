@@ -29,13 +29,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <sys/ioctl.h>
-
 #include <err.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <libudev.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,9 +38,7 @@
 #include <string.h>
 
 #include "diag.h"
-#include "diag_cntl.h"
 #include "hdlc.h"
-#include "list.h"
 #include "mbuf.h"
 #include "peripheral.h"
 #include "util.h"
@@ -55,22 +48,6 @@
 
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 struct list_head diag_clients = LIST_INIT(diag_clients);
-
-void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen);
-
-static int hdlc_enqueue(struct list_head *queue, uint8_t *msg, size_t msglen)
-{
-	uint8_t *outbuf;
-	size_t outlen;
-
-	outbuf = hdlc_encode(msg, msglen, &outlen);
-	if (!outbuf)
-		err(1, "failed to allocate hdlc destination buffer");
-
-	queue_push(queue, outbuf, outlen);
-
-	return 0;
-}
 
 void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen)
 {
@@ -146,70 +123,6 @@ int diag_data_recv(int fd, void *data)
 				break;
 		}
 	}
-
-	return 0;
-}
-
-static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
-			     size_t len)
-{
-	struct peripheral *peripheral;
-	struct list_head *item;
-	struct diag_cmd *dc;
-	unsigned int key;
-	int handled = 0;
-
-	if (ptr[0] == DIAG_CMD_SUBSYS_DISPATCH)
-		key = ptr[0] << 24 | ptr[1] << 16 | ptr[3] << 8 | ptr[2];
-	else
-		key = 0xff << 24 | 0xff << 16 | ptr[0];
-
-	if (key == 0x4b320003) {
-		return hdlc_enqueue(&client->outq, ptr, len);
-	}
-
-	list_for_each(item, &diag_cmds) {
-		dc = container_of(item, struct diag_cmd, node);
-		if (key < dc->first || key > dc->last)
-			continue;
-
-		peripheral = dc->peripheral;
-
-		if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
-			queue_push(&peripheral->dataq, ptr, len);
-		else
-			hdlc_enqueue(&dc->peripheral->dataq, ptr, len);
-
-		handled++;
-	}
-
-	return handled ? 0 : -ENOENT;
-}
-
-static void diag_rsp_bad_command(struct diag_client *client,
-				 uint8_t *msg, size_t len)
-{
-	uint8_t *buf;
-
-	buf = malloc(len + 1);
-	if (!buf)
-		err(1, "failed to allocate error buffer");
-
-	buf[0] = 0x13;
-	memcpy(buf + 1, msg, len);
-
-	hdlc_enqueue(&client->outq, buf, len + 1);
-
-	free(buf);
-}
-
-int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len)
-{
-	int ret;
-
-	ret = diag_cmd_dispatch(client, data, len);
-	if (ret < 0)
-		diag_rsp_bad_command(client, data, len);
 
 	return 0;
 }

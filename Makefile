@@ -8,6 +8,7 @@ SRCS := diag.c \
 	hdlc.c \
 	mbuf.c \
 	peripheral.c \
+	router.c \
 	socket.c \
 	uart.c \
 	usb.c \
