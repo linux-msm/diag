@@ -42,8 +42,6 @@
 #include "peripheral.h"
 #include "util.h"
 
-#define __packed __attribute__((packed))
-
 #define DIAG_CTRL_MSG_DTR               2
 #define DIAG_CTRL_MSG_DIAGMODE          3
 #define DIAG_CTRL_MSG_DIAGDATA          4
