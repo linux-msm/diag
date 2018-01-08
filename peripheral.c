@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016, Linaro Ltd.
  * All rights reserved.
  *
@@ -46,10 +47,13 @@
 
 #include "diag.h"
 #include "diag_cntl.h"
+#include "hdlc.h"
 #include "list.h"
 #include "peripheral.h"
 #include "util.h"
 #include "watch.h"
+
+#define APPS_BUF_SIZE 16384
 
 struct devnode {
 	char *devnode;
@@ -61,6 +65,66 @@ struct devnode {
 
 struct list_head peripherals = LIST_INIT(peripherals);
 struct list_head devnodes = LIST_INIT(devnodes);
+
+static int diag_cmd_recv(int fd, void *data)
+{
+	struct peripheral *peripheral = data;
+	uint8_t buf[APPS_BUF_SIZE];
+	ssize_t n;
+
+	n = read(fd, buf, sizeof(buf));
+	if (n < 0) {
+		if (errno != EAGAIN) {
+			warn("failed to read from cmd channel");
+			peripheral_close(peripheral);
+		}
+	}
+
+	return 0;
+}
+
+static int diag_data_recv(int fd, void *data)
+{
+	struct peripheral *peripheral = data;
+	uint8_t buf[4096];
+	size_t msglen;
+	size_t len;
+	ssize_t n;
+	void *msg;
+	void *ptr;
+
+	for (;;) {
+		n = read(fd, buf, sizeof(buf));
+		if (n < 0) {
+			if (errno != EAGAIN) {
+				warn("failed to read from data channel");
+				peripheral_close(peripheral);
+			}
+
+			break;
+		}
+
+		ptr = buf;
+		len = n;
+		for (;;) {
+			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE) {
+				msg = ptr;
+				msglen = len;
+			} else {
+				msg = hdlc_decode_one(&ptr, &len, &msglen);
+				if (!msg)
+					break;
+			}
+
+			diag_forward_response(msg, msglen);
+
+			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
+				break;
+		}
+	}
+
+	return 0;
+}
 
 static struct devnode *devnode_get(const char *devnode)
 {

@@ -45,8 +45,6 @@
 #include "util.h"
 #include "watch.h"
 
-#define APPS_BUF_SIZE 16384
-
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 struct list_head diag_clients = LIST_INIT(diag_clients);
 
@@ -62,23 +60,6 @@ void queue_push(struct list_head *queue, const void *msg, size_t msglen)
 	list_add(queue, &mbuf->node);
 }
 
-int diag_cmd_recv(int fd, void *data)
-{
-	struct peripheral *peripheral = data;
-	uint8_t buf[APPS_BUF_SIZE];
-	ssize_t n;
-
-	n = read(fd, buf, sizeof(buf));
-	if (n < 0) {
-		if (errno != EAGAIN) {
-			warn("failed to read from cmd channel");
-			peripheral_close(peripheral);
-		}
-	}
-
-	return 0;
-}
-
 void diag_forward_response(const void *ptr, size_t len)
 {
 	struct diag_client *client;
@@ -89,49 +70,6 @@ void diag_forward_response(const void *ptr, size_t len)
 
 		queue_push(&client->outq, ptr, len);
 	}
-}
-
-int diag_data_recv(int fd, void *data)
-{
-	struct peripheral *peripheral = data;
-	uint8_t buf[4096];
-	size_t msglen;
-	size_t len;
-	ssize_t n;
-	void *msg;
-	void *ptr;
-
-	for (;;) {
-		n = read(fd, buf, sizeof(buf));
-		if (n < 0) {
-			if (errno != EAGAIN) {
-				warn("failed to read from data channel");
-				peripheral_close(peripheral);
-			}
-
-			break;
-		}
-
-		ptr = buf;
-		len = n;
-		for (;;) {
-			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE) {
-				msg = ptr;
-				msglen = len;
-			} else {
-				msg = hdlc_decode_one(&ptr, &len, &msglen);
-				if (!msg)
-					break;
-			}
-
-			diag_forward_response(msg, msglen);
-
-			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
-				break;
-		}
-	}
-
-	return 0;
 }
 
 void diag_client_add(struct diag_client *client)

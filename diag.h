@@ -95,8 +95,7 @@ void queue_push(struct list_head *queue, const void *msg, size_t msglen);
 
 extern struct list_head diag_cmds;
 
-int diag_cmd_recv(int fd, void *data);
-int diag_data_recv(int fd, void *data);
+void diag_forward_response(const void *ptr, size_t len);
 
 int diag_sock_connect(const char *hostname, unsigned short port);
 int diag_uart_open(const char *uartname, unsigned int baudrate);
