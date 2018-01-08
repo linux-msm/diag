@@ -69,6 +69,8 @@ struct diag_log_cmd_mask {
 #define DIAG_CMD_EVENT_ERROR_CODE_OK			0
 #define DIAG_CMD_EVENT_ERROR_CODE_FAIL			1
 
+#define DIAG_CMD_SET_MASK	0x82
+
 static int handle_logging_configuration(struct diag_client *client,
 					const void *buf, size_t len)
 {
@@ -483,9 +485,65 @@ static int handle_event_get_mask(struct diag_client *client, const void *buf,
 	return 0;
 }
 
+static int handle_event_set_mask(struct diag_client *client,
+				 const void *buf, size_t len)
+{
+	const struct {
+		uint8_t cmd_code;
+		uint8_t pad;
+		uint16_t reserved;
+		uint16_t num_bits;
+		uint8_t mask[0];
+	} __packed *req = buf;
+	struct {
+		uint8_t cmd_code;
+		uint8_t error_code;
+		uint16_t reserved;
+		uint16_t num_bits;
+		uint8_t mask[0];
+	} __packed *resp;
+	uint32_t resp_size = sizeof(*resp);
+	uint16_t mask_size = EVENT_COUNT_TO_BYTES(req->num_bits);
+
+	if (sizeof(*req) + mask_size != len)
+		return -EMSGSIZE;
+
+	if (diag_cmd_update_event_mask(req->num_bits, req->mask) == 0) {
+		resp_size += mask_size;
+		resp = malloc(resp_size);
+		if (!resp) {
+			warn("Failed to allocate response packet\n");
+			return -errno;
+		}
+		resp->cmd_code = req->cmd_code;
+		resp->reserved = req->reserved;
+		resp->num_bits = req->num_bits;
+		memcpy(resp->mask, req->mask, mask_size);
+		resp->error_code = DIAG_CMD_EVENT_ERROR_CODE_OK;
+
+		peripheral_broadcast_event_mask();
+	} else {
+		resp = malloc(resp_size);
+		if (!resp) {
+			warn("Failed to allocate response packet\n");
+			return -errno;
+		}
+		resp->cmd_code = req->cmd_code;
+		resp->reserved = req->reserved;
+		resp->num_bits = 0;
+		resp->error_code = DIAG_CMD_EVENT_ERROR_CODE_FAIL;
+	}
+
+	hdlc_enqueue(&client->outq, resp, resp_size);
+	free(resp);
+
+	return 0;
+}
+
 void register_common_cmds(void)
 {
 	register_common_cmd(DIAG_CMD_LOGGING_CONFIGURATION, handle_logging_configuration);
 	register_common_cmd(DIAG_CMD_EXTENDED_MESSAGE_CONFIGURATION, handle_extended_message_configuration);
 	register_common_cmd(DIAG_CMD_GET_MASK, handle_event_get_mask);
+	register_common_cmd(DIAG_CMD_SET_MASK, handle_event_set_mask);
 }

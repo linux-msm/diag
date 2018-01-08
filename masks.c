@@ -564,7 +564,7 @@ int diag_cmd_get_event_mask(uint16_t num_bits, uint8_t **mask)
 	return 0;
 }
 
-int diag_cmd_update_event_mask(uint16_t num_bits, uint8_t *mask)
+int diag_cmd_update_event_mask(uint16_t num_bits, const uint8_t *mask)
 {
 	void *tmp_buf;
 

@@ -36,6 +36,7 @@ struct diag_ssid_range_t;
 int peripheral_init(void);
 void peripheral_close(struct peripheral *peripheral);
 
+void peripheral_broadcast_event_mask(void);
 void peripheral_broadcast_log_mask(unsigned int equip_id);
 void peripheral_broadcast_msg_mask(struct diag_ssid_range_t *range);
 
