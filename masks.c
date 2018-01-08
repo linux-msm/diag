@@ -461,7 +461,7 @@ int diag_cmd_get_msg_mask(struct diag_ssid_range_t *range, uint32_t **mask)
 	return 1;
 }
 
-int diag_cmd_set_msg_mask(struct diag_ssid_range_t range, uint32_t *mask)
+int diag_cmd_set_msg_mask(struct diag_ssid_range_t range, const uint32_t *mask)
 {
 	struct diag_msg_mask_t *msg_item = msg_mask.ptr;
 	uint32_t num_msgs = 0;

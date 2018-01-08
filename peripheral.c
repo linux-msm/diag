@@ -337,3 +337,15 @@ void peripheral_broadcast_log_mask(unsigned int equip_id)
 		diag_cntl_send_log_mask(peripheral, equip_id);
 	}
 }
+
+void peripheral_broadcast_msg_mask(struct diag_ssid_range_t *range)
+{
+	struct peripheral *peripheral;
+	struct list_head *item;
+
+	list_for_each(item, &peripherals) {
+		peripheral = container_of(item, struct peripheral, node);
+
+		diag_cntl_send_msg_mask(peripheral, range);
+	}
+}
