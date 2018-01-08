@@ -39,6 +39,7 @@
 
 #include "diag.h"
 #include "hdlc.h"
+#include "masks.h"
 #include "mbuf.h"
 #include "peripheral.h"
 #include "util.h"
@@ -211,6 +212,8 @@ int main(int argc, char **argv)
 	peripheral_init();
 
 	register_app_cmds();
+
+	diag_masks_init();
 
 	watch_run();
 

@@ -7,6 +7,7 @@ SRCS := app_cmds.c \
 	diag.c \
 	diag_cntl.c \
 	hdlc.c \
+	masks.c \
 	mbuf.c \
 	peripheral.c \
 	router.c \
