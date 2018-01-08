@@ -117,5 +117,6 @@ void register_common_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
 						    size_t len));
 
 void register_app_cmds(void);
+void register_common_cmds(void);
 
 #endif

@@ -34,4 +34,6 @@
 int peripheral_init(void);
 void peripheral_close(struct peripheral *peripheral);
 
+void peripheral_broadcast_log_mask(unsigned int equip_id);
+
 #endif

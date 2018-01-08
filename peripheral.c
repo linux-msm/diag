@@ -325,3 +325,15 @@ int peripheral_init(void)
 
 	return 0;
 }
+
+void peripheral_broadcast_log_mask(unsigned int equip_id)
+{
+	struct peripheral *peripheral;
+	struct list_head *item;
+
+	list_for_each(item, &peripherals) {
+		peripheral = container_of(item, struct peripheral, node);
+
+		diag_cntl_send_log_mask(peripheral, equip_id);
+	}
+}
