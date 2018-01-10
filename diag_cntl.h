@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016, Linaro Ltd.
  * All rights reserved.
  *
@@ -31,10 +32,14 @@
 #ifndef __DIAG_CNTL_H__
 #define __DIAG_CNTL_H__
 
-#include "diag.h"
+#include "peripheral.h"
+#include "masks.h"
 
 int diag_cntl_recv(int fd, void *data);
 void diag_cntl_send_feature_mask(struct peripheral *peripheral);
+void diag_cntl_send_log_mask(struct peripheral *peripheral, uint32_t equip_id);
+void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_range_t *range);
+void diag_cntl_send_event_mask(struct peripheral *peripheral);
 void diag_cntl_close(struct peripheral *peripheral);
 
 #endif
