@@ -28,7 +28,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdint.h>
+#include <stdlib.h>
+
 #include "hdlc.h"
 
 /*
@@ -74,4 +75,82 @@ static uint16_t crc_table[256] = {
 uint16_t hdlc_crc_byte(uint16_t crc, uint8_t ch)
 {
 	return (crc >> 8) ^ crc_table[(crc ^ ch) & 0xff];
+}
+
+uint8_t *hdlc_encode(uint8_t *src, size_t slen, size_t *dlen)
+{
+	uint16_t crc = 0xffff;
+	uint8_t tmp[2];
+	uint8_t *dst;
+	uint8_t *s = src;
+	uint8_t *d;
+	int i;
+
+	dst = malloc((slen + 2) * 2 + 1);
+	if (!dst)
+		return NULL;
+
+	d = dst;
+	while (s < src + slen) {
+		crc = hdlc_crc_byte(crc, *s);
+
+		if (*s == 0x7d || *s == 0x7e) {
+			*d++ = 0x7d;
+			*d++ = *s++ ^ 0x20;
+		} else {
+			*d++ = *s++;
+		}
+	}
+
+	tmp[0] = ~crc & 0xff;
+	tmp[1] = ~crc >> 8;
+
+	s = tmp;
+	for (i = 0; i < 2; i++) {
+		if (*s == 0x7d || *s == 0x7e) {
+			*d++ = 0x7d;
+			*d++ = *s++ ^ 0x20;
+		} else {
+			*d++ = *s++;
+		}
+	}
+
+	*d++ = 0x7e;
+	*dlen = d - dst;
+
+	return dst;
+}
+
+uint8_t *hdlc_decode_one(uint8_t **buf, size_t *len, size_t *msglen)
+{
+	uint8_t *dst = *buf;
+	uint8_t *src = *buf;
+	uint8_t *msg = *buf;
+	uint8_t escape = 0;
+	uint8_t ch;
+
+	for (;;) {
+		if (src >= *buf + *len)
+			return NULL;
+
+		ch = *src++;
+
+		if (ch == 0x7e) {
+			break;
+		} else if (ch == 0x7d) {
+			escape = 0x20;
+		} else {
+			*dst++ = ch ^ escape;
+			escape = 0;
+		}
+	}
+
+	*len -= src - msg;
+	*buf = src;
+
+	dst--;
+	dst--;
+
+	*msglen = dst - msg;
+	return msg;
 }
