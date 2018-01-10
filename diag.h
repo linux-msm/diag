@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016, Linaro Ltd.
  * All rights reserved.
  *
@@ -32,6 +33,8 @@
 #define __DIAG_H__
 
 #include "list.h"
+
+#define DEFAULT_SOCKET_PORT 2500
 
 #define BIT(x) (1 << (x))
 

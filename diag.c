@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016, Linaro Ltd.
  * All rights reserved.
  *
@@ -38,6 +39,7 @@
 #include <fcntl.h>
 #include <libudev.h>
 #include <netdb.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -334,15 +336,51 @@ static int diag_sock_recv(int fd, void *data)
 	return 0;
 }
 
+static void usage(void)
+{
+	fprintf(stderr,
+		"User space application for diag interface\n"
+		"\n"
+		"usage: diag [-hs]\n"
+		"\n"
+		"options:\n"
+		"   -h   show this usage\n"
+		"   -s   <socket address[:port]>\n"
+	);
+	exit(1);
+}
+
 int main(int argc, char **argv)
 {
 	struct diag_client *qxdm;
+	char *host_address = "";
+	int host_port = DEFAULT_SOCKET_PORT;
+	char *token;
 	int ret;
+	int c;
+
+	for (;;) {
+		c = getopt(argc, argv, "hs:");
+		if (c < 0)
+			break;
+		switch (c) {
+		case 's':
+			host_address = strtok(strdup(optarg), ":");
+			token = strtok(NULL, "");
+			if (token)
+				host_port = atoi(token);
+			break;
+		default:
+		case 'h':
+			usage();
+			break;
+		}
+	}
 
 	qxdm = malloc(sizeof(*qxdm));
 	memset(qxdm, 0, sizeof(*qxdm));
 
-	ret = diag_sock_connect("10.0.1.45", 2500);
+	ret = diag_sock_connect(host_address, host_port);
 	if (ret < 0)
 		err(1, "failed to connect to qxdm");
 	qxdm->fd = ret;
