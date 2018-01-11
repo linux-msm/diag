@@ -29,6 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <err.h>
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -129,8 +130,10 @@ static int diag_cntl_register(struct peripheral *peripheral,
 		//	  peripheral->name, first, last);
 
 		dc = malloc(sizeof(*dc));
-		if (!dc)
-			err(1, "malloc failed");
+		if (!dc) {
+			warn("malloc failed");
+			return -ENOMEM;
+		}
 		memset(dc, 0, sizeof(*dc));
 
 		dc->first = first;
