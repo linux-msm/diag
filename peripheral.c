@@ -186,6 +186,8 @@ static void peripheral_open(void *data)
 	watch_add_writeq(peripheral->data_fd, &peripheral->dataq);
 	watch_add_readfd(peripheral->cntl_fd, diag_cntl_recv, peripheral);
 	watch_add_readfd(peripheral->data_fd, diag_data_recv, peripheral);
+	if (peripheral->cmd_fd >= 0)
+		watch_add_readfd(peripheral->cmd_fd, diag_cmd_recv, peripheral);
 }
 
 static int peripheral_create(const char *name)

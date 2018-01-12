@@ -85,6 +85,7 @@ void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen);
 
 extern struct list_head diag_cmds;
 
+int diag_cmd_recv(int fd, void *data);
 int diag_data_recv(int fd, void *data);
 
 #endif
