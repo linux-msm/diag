@@ -29,65 +29,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __DIAG_H__
-#define __DIAG_H__
 
-#include "list.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
-#define DEFAULT_SOCKET_PORT 2500
+#include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <string.h>
 
-#define BIT(x) (1 << (x))
-
-#define DIAG_FEATURE_FEATURE_MASK_SUPPORT	BIT(0)
-#define DIAG_FEATURE_LOG_ON_DEMAND_APPS		BIT(2)
-#define DIAG_FEATURE_REQ_RSP_SUPPORT		BIT(4)
-#define DIAG_FEATURE_APPS_HDLC_ENCODE		BIT(6)
-#define DIAG_FEATURE_STM			BIT(9)
-#define DIAG_FEATURE_PERIPHERAL_BUFFERING	BIT(10)
-#define DIAG_FEATURE_MASK_CENTRALIZATION	BIT(11)
-#define DIAG_FEATURE_SOCKETS_ENABLED		BIT(13)
-
-#define DIAG_CMD_SUBSYS_DISPATCH       75
-
-struct diag_client {
-	const char *name;
+int diag_sock_connect(const char *hostname, unsigned short port)
+{
+	struct sockaddr_in addr;
+	struct hostent *host;
+	int ret;
 	int fd;
 
-	struct list_head outq;
-	struct list_head node;
-};
+	fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
+	if (fd < 0)
+		return -errno;
 
-struct peripheral {
-	struct list_head  node;
+	host = gethostbyname(hostname);
+	if (!host)
+		return -errno;
 
-	char *name;
+	bzero(&addr, sizeof(addr));
+	addr.sin_family = AF_INET;
+	bcopy(host->h_addr, &addr.sin_addr.s_addr, host->h_length);
+	addr.sin_port = htons(port);
 
-	unsigned long features;
+	ret = connect(fd, (const struct sockaddr *)&addr, sizeof(addr));
+	if (ret < 0)
+		return -errno;
 
-	struct list_head cntlq;
-	struct list_head dataq;
+	ret = fcntl(fd, F_SETFL, O_NONBLOCK);
+	if (ret < 0)
+		return -errno;
 
-	int cntl_fd;
-	int data_fd;
-	int cmd_fd;
-};
+	printf("Connected to %s:%d\n", hostname, port);
 
-struct diag_cmd {
-	struct list_head node;
-
-	unsigned int first;
-	unsigned int last;
-
-	struct peripheral *peripheral;
-};
-
-void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen);
-
-extern struct list_head diag_cmds;
-
-int diag_cmd_recv(int fd, void *data);
-int diag_data_recv(int fd, void *data);
-
-int diag_sock_connect(const char *hostname, unsigned short port);
-
-#endif
+	return fd;
+}
