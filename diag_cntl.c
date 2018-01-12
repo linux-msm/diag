@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016, Linaro Ltd.
  * All rights reserved.
  *
@@ -213,8 +214,10 @@ int diag_cntl_recv(int fd, void *data)
 
 	n = read(fd, buf, sizeof(buf));
 	if (n < 0) {
-		warn("failed to read from cntl channel");
-		peripheral_close(peripheral);
+		if (errno != EAGAIN) {
+			warn("failed to read from cntl channel");
+			peripheral_close(peripheral);
+		}
 		return 0;
 	}
 
@@ -261,5 +264,4 @@ void diag_cntl_close(struct peripheral *peripheral)
 		if (dc->peripheral == peripheral)
 			list_del(&dc->node);
 	}
-
 }
