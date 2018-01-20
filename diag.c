@@ -156,14 +156,8 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 	struct peripheral *peripheral;
 	struct list_head *item;
 	struct diag_cmd *dc;
-	uint8_t *outbuf;
-	size_t outlen;
 	unsigned int key;
 	int handled = 0;
-
-	outbuf = hdlc_encode(ptr, len, &outlen);
-	if (!outbuf)
-		err(1, "failed to allocate hdlc destination buffer");
 
 	if (ptr[0] == DIAG_CMD_SUBSYS_DISPATCH)
 		key = ptr[0] << 24 | ptr[1] << 16 | ptr[3] << 8 | ptr[2];
@@ -188,8 +182,6 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 
 		handled++;
 	}
-
-	free(outbuf);
 
 	return handled ? 0 : -ENOENT;
 }
