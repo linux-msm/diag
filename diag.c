@@ -50,7 +50,7 @@
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 struct list_head diag_clients = LIST_INIT(diag_clients);
 
-void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen)
+void queue_push(struct list_head *queue, const void *msg, size_t msglen)
 {
 	struct mbuf *mbuf;
 	void *ptr;
@@ -79,11 +79,21 @@ int diag_cmd_recv(int fd, void *data)
 	return 0;
 }
 
+void diag_forward_response(const void *ptr, size_t len)
+{
+	struct diag_client *client;
+	struct list_head *item;
+
+	list_for_each(item, &diag_clients) {
+		client = container_of(item, struct diag_client, node);
+
+		queue_push(&client->outq, ptr, len);
+	}
+}
+
 int diag_data_recv(int fd, void *data)
 {
 	struct peripheral *peripheral = data;
-	struct diag_client *client;
-	struct list_head *item;
 	uint8_t buf[4096];
 	size_t msglen;
 	size_t len;
@@ -114,11 +124,7 @@ int diag_data_recv(int fd, void *data)
 					break;
 			}
 
-			list_for_each(item, &diag_clients) {
-				client = container_of(item, struct diag_client, node);
-
-				queue_push(&client->outq, msg, msglen);
-			}
+			diag_forward_response(msg, msglen);
 
 			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
 				break;

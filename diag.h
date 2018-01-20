@@ -88,7 +88,7 @@ struct diag_cmd {
 	int(*cb)(struct diag_client *client, const void *buf, size_t len);
 };
 
-void queue_push(struct list_head *queue, uint8_t *msg, size_t msglen);
+void queue_push(struct list_head *queue, const void *msg, size_t msglen);
 
 extern struct list_head diag_cmds;
 
