@@ -40,15 +40,20 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "diag.h"
 #include "hdlc.h"
+#include "watch.h"
 
 #define APPS_BUF_SIZE 4096
 
+static int diag_sock_recv(int fd, void* data);
+
 int diag_sock_connect(const char *hostname, unsigned short port)
 {
+	struct diag_client *client;
 	struct sockaddr_in addr;
 	struct hostent *host;
 	int ret;
@@ -77,10 +82,22 @@ int diag_sock_connect(const char *hostname, unsigned short port)
 
 	printf("Connected to %s:%d\n", hostname, port);
 
+	client = calloc(1, sizeof(*client));
+	if (!client)
+		err(1, "failed to allocate client context\n");
+
+	client->fd = fd;
+	client->name = "DIAG CLIENT";
+
+	watch_add_readfd(client->fd, diag_sock_recv, client);
+	watch_add_writeq(client->fd, &client->outq);
+
+	diag_client_add(client);
+
 	return fd;
 }
 
-int diag_sock_recv(int fd, void* data)
+static int diag_sock_recv(int fd, void* data)
 {
 	struct diag_client *client = (struct diag_client *)data;
 	uint8_t buf[APPS_BUF_SIZE] = { 0 };

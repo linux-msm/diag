@@ -222,6 +222,11 @@ int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t
 	return 0;
 }
 
+void diag_client_add(struct diag_client *client)
+{
+	list_add(&diag_clients, &client->node);
+}
+
 static void usage(void)
 {
 	fprintf(stderr,
@@ -238,7 +243,6 @@ static void usage(void)
 
 int main(int argc, char **argv)
 {
-	struct diag_client *client;
 	char *host_address = "";
 	int host_port = DEFAULT_SOCKET_PORT;
 	char *token;
@@ -263,18 +267,9 @@ int main(int argc, char **argv)
 		}
 	}
 
-	client = malloc(sizeof(*client));
-	memset(client, 0, sizeof(*client));
-
 	ret = diag_sock_connect(host_address, host_port);
 	if (ret < 0)
 		err(1, "failed to connect to client");
-	client->fd = ret;
-	client->name = "DIAG CLIENT";
-
-	watch_add_readfd(ret, diag_sock_recv, client);
-	watch_add_writeq(client->fd, &client->outq);
-	list_add(&diag_clients, &client->node);
 
 	peripheral_init();
 
