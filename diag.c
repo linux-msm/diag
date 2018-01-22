@@ -92,11 +92,11 @@ int diag_data_recv(int fd, void *data)
 	struct diag_client *client;
 	struct list_head *item;
 	uint8_t buf[4096];
-	uint8_t *ptr;
-	uint8_t *msg;
 	size_t msglen;
 	size_t len;
 	ssize_t n;
+	void *msg;
+	void *ptr;
 
 	for (;;) {
 		n = read(fd, buf, sizeof(buf));
@@ -228,11 +228,11 @@ static int diag_sock_recv(int fd, void *data)
 {
 	struct diag_client *client = data;
 	uint8_t buf[4096];
-	uint8_t *ptr;
-	uint8_t *msg;
 	size_t msglen;
 	size_t len;
 	ssize_t n;
+	void *msg;
+	void *ptr;
 	int ret;
 
 	n = read(fd, buf, sizeof(buf));

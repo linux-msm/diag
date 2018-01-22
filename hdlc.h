@@ -34,9 +34,7 @@
 
 #include <stdint.h>
 
-uint16_t hdlc_crc_byte(uint16_t crc, uint8_t ch);
+void *hdlc_encode(const void *src, size_t slen, size_t *dlen);
 
-uint8_t *hdlc_encode(uint8_t *src, size_t slen, size_t *dlen);
-
-uint8_t *hdlc_decode_one(uint8_t **buf, size_t *len, size_t *msglen);
+void *hdlc_decode_one(void **buf, size_t *len, size_t *msglen);
 #endif

@@ -72,17 +72,18 @@ static uint16_t crc_table[256] = {
 	0x3de3, 0x2c6a, 0x1ef1, 0x0f78
 };
 
-uint16_t hdlc_crc_byte(uint16_t crc, uint8_t ch)
+static uint16_t hdlc_crc_byte(uint16_t crc, uint8_t ch)
 {
 	return (crc >> 8) ^ crc_table[(crc ^ ch) & 0xff];
 }
 
-uint8_t *hdlc_encode(uint8_t *src, size_t slen, size_t *dlen)
+void *hdlc_encode(const void *src, size_t slen, size_t *dlen)
 {
+	const uint8_t *end = src + slen;
+	const uint8_t *s = src;
 	uint16_t crc = 0xffff;
 	uint8_t tmp[2];
 	uint8_t *dst;
-	uint8_t *s = src;
 	uint8_t *d;
 	int i;
 
@@ -91,7 +92,7 @@ uint8_t *hdlc_encode(uint8_t *src, size_t slen, size_t *dlen)
 		return NULL;
 
 	d = dst;
-	while (s < src + slen) {
+	while (s < end) {
 		crc = hdlc_crc_byte(crc, *s);
 
 		if (*s == 0x7d || *s == 0x7e) {
@@ -121,8 +122,9 @@ uint8_t *hdlc_encode(uint8_t *src, size_t slen, size_t *dlen)
 	return dst;
 }
 
-uint8_t *hdlc_decode_one(uint8_t **buf, size_t *len, size_t *msglen)
+void *hdlc_decode_one(void **buf, size_t *len, size_t *msglen)
 {
+	uint8_t *end = *buf + *len;
 	uint8_t *dst = *buf;
 	uint8_t *src = *buf;
 	uint8_t *msg = *buf;
@@ -130,7 +132,7 @@ uint8_t *hdlc_decode_one(uint8_t **buf, size_t *len, size_t *msglen)
 	uint8_t ch;
 
 	for (;;) {
-		if (src >= *buf + *len)
+		if (src >= end)
 			return NULL;
 
 		ch = *src++;
