@@ -253,46 +253,49 @@ static int handle_extended_message_configuration(struct diag_client *client,
 		break;
 	}
 	case DIAG_CMD_OP_GET_BUILD_MASK: {
-		struct diag_ssid_range_t *range = (struct diag_ssid_range_t *)(buf + sizeof(struct diag_msg_cmd_header));
+		struct diag_ssid_range_t range;
 		struct {
-			struct diag_msg_cmd_header header;
+			uint8_t cmd;
+			uint8_t subcmd;
+			struct diag_ssid_range_t range;
 			uint8_t status;
 			uint8_t reserved;
-			uint32_t bld_masks[];
+			uint32_t masks[];
 		} __packed *resp;
 		uint32_t resp_size = sizeof(*resp);
-		uint32_t *masks = NULL;
-		uint32_t masks_size = 0;
+		uint32_t *masks;
+		uint32_t masks_size;
 
-		if (sizeof(*request_header) + sizeof(*range) != len)
+		if (sizeof(*request_header) + sizeof(range) != len)
 			return -EMSGSIZE;
 
-		if (diag_cmd_get_build_mask(range, &masks) == 0) {
-			masks_size = MSG_RANGE_TO_SIZE(*range);
+		memcpy(&range, buf + sizeof(struct diag_msg_cmd_header), sizeof(range));
+
+		if (diag_cmd_get_build_mask(&range, &masks) == 0) {
+			masks_size = MSG_RANGE_TO_SIZE(range);
 			resp_size += masks_size;
-			resp = malloc(resp_size);
-			if (!resp) {
-				warn("Failed to allocate response packet\n");
-				return -errno;
-			}
-			memcpy(resp, request_header, sizeof(*request_header));
-			if (masks != NULL) {
-				memcpy(resp->bld_masks, masks, masks_size);
-				free(masks);
-			}
+
+			resp = alloca(resp_size);
+			memset(resp, 0, resp_size);
+			resp->cmd = DIAG_CMD_EXTENDED_MESSAGE_CONFIGURATION;
+			resp->subcmd = DIAG_CMD_OP_GET_BUILD_MASK;
+
+			resp->range.ssid_first = range.ssid_first;
+			resp->range.ssid_last = range.ssid_last;
+
 			resp->status = DIAG_CMD_MSG_STATUS_SUCCESSFUL;
+			memcpy(resp->masks, masks, masks_size);
+
+			free(masks);
 		} else {
-			resp = malloc(resp_size);
-			if (!resp) {
-				warn("Failed to allocate response packet\n");
-				return -errno;
-			}
-			memcpy(resp, request_header, sizeof(*request_header));
+			resp = alloca(resp_size);
+			memset(resp, 0, resp_size);
+			resp->cmd = DIAG_CMD_EXTENDED_MESSAGE_CONFIGURATION;
+			resp->subcmd = DIAG_CMD_OP_GET_BUILD_MASK;
 			resp->status = DIAG_CMD_MSG_STATUS_UNSUCCESSFUL;
 		}
 
 		hdlc_enqueue(&client->outq, resp, resp_size);
-		free(resp);
 
 		break;
 	}
