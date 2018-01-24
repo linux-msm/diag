@@ -319,29 +319,23 @@ static int handle_extended_message_configuration(struct diag_client *client,
 		if (diag_cmd_get_msg_mask(&range, &masks) == 0) {
 			masks_size = MSG_RANGE_TO_SIZE(range);
 			resp_size += masks_size;
-			resp = malloc(resp_size);
-			if (!resp) {
-				warn("Failed to allocate response packet\n");
-				return -errno;
-			}
+
+			resp = alloca(resp_size);
+			memset(resp, 0, resp_size);
+
 			memcpy(resp, request_header, sizeof(*request_header));
-			if (masks != NULL) {
-				memcpy(resp->rt_masks, masks, masks_size);
-				free(masks);
-			}
+			memcpy(resp->rt_masks, masks, masks_size);
 			resp->status = DIAG_CMD_MSG_STATUS_SUCCESSFUL;
 		} else {
-			resp = malloc(resp_size);
-			if (!resp) {
-				warn("Failed to allocate response packet\n");
-				return -errno;
-			}
+			resp = alloca(resp_size);
+			memset(resp, 0, resp_size);
+
 			memcpy(resp, request_header, sizeof(*request_header));
 			resp->status = DIAG_CMD_MSG_STATUS_UNSUCCESSFUL;
 		}
 
 		hdlc_enqueue(&client->outq, resp, resp_size);
-		free(resp);
+		free(masks);
 
 		break;
 	}
