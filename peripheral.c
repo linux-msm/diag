@@ -83,9 +83,8 @@ static int diag_cmd_recv(int fd, void *data)
 	return 0;
 }
 
-static int diag_data_recv(int fd, void *data)
+static int diag_data_recv_hdlc(int fd, struct peripheral *peripheral)
 {
-	struct peripheral *peripheral = data;
 	uint8_t buf[4096];
 	size_t msglen;
 	size_t len;
@@ -95,32 +94,52 @@ static int diag_data_recv(int fd, void *data)
 
 	for (;;) {
 		n = read(fd, buf, sizeof(buf));
-		if (n < 0) {
-			if (errno != EAGAIN) {
-				warn("failed to read from data channel");
-				peripheral_close(peripheral);
-			}
-
-			break;
-		}
+		if (n < 0)
+			return -errno;
 
 		ptr = buf;
 		len = n;
 		for (;;) {
-			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE) {
-				msg = ptr;
-				msglen = len;
-			} else {
-				msg = hdlc_decode_one(&ptr, &len, &msglen);
-				if (!msg)
-					break;
-			}
+			msg = hdlc_decode_one(&ptr, &len, &msglen);
+			if (!msg)
+				break;
 
 			diag_forward_response(msg, msglen);
-
-			if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
-				break;
 		}
+	}
+
+	/* Not reached */
+}
+
+static int diag_data_recv_raw(int fd, struct peripheral *peripheral)
+{
+	uint8_t buf[4096];
+	ssize_t n;
+
+	for (;;) {
+		n = read(fd, buf, sizeof(buf));
+		if (n < 0)
+			return -errno;
+
+		diag_forward_response(buf, n);
+	}
+
+	/* Not reached */
+}
+
+static int diag_data_recv(int fd, void *data)
+{
+	struct peripheral *peripheral = data;
+	ssize_t n;
+
+	if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
+		n = diag_data_recv_raw(fd, peripheral);
+	else
+		n = diag_data_recv_hdlc(fd, peripheral);
+
+	if (n < 0 && n != -EAGAIN) {
+		warn("failed to read from data channel");
+		peripheral_close(peripheral);
 	}
 
 	return 0;
