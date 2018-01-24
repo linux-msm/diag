@@ -68,7 +68,7 @@ void diag_forward_response(const void *ptr, size_t len)
 	list_for_each(item, &diag_clients) {
 		client = container_of(item, struct diag_client, node);
 
-		queue_push(&client->outq, ptr, len);
+		hdlc_enqueue(&client->outq, ptr, len);
 	}
 }
 
