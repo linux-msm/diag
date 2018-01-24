@@ -37,6 +37,7 @@
 
 #include "diag.h"
 #include "hdlc.h"
+#include "peripheral.h"
 #include "util.h"
 
 #define DIAG_CMD_RSP_BAD_COMMAND			0x13
@@ -62,7 +63,6 @@ int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
 static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 			     size_t len)
 {
-	struct peripheral *peripheral;
 	struct list_head *item;
 	struct diag_cmd *dc;
 	unsigned int key;
@@ -87,14 +87,10 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 		if (key < dc->first || key > dc->last)
 			continue;
 
-		peripheral = dc->peripheral;
-
 		if (dc->cb)
 			dc->cb(client, ptr, len);
-		else if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
-			queue_push(&dc->peripheral->dataq, ptr, len);
 		else
-			hdlc_enqueue(&dc->peripheral->dataq, ptr, len);
+			peripheral_send(dc->peripheral, ptr, len);
 
 		handled++;
 	}

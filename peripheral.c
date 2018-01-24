@@ -126,6 +126,16 @@ static int diag_data_recv(int fd, void *data)
 	return 0;
 }
 
+int peripheral_send(struct peripheral *peripheral, const void *ptr, size_t len)
+{
+	if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
+		queue_push(&peripheral->dataq, ptr, len);
+	else
+		hdlc_enqueue(&peripheral->dataq, ptr, len);
+
+	return 0;
+}
+
 static struct devnode *devnode_get(const char *devnode)
 {
 	struct list_head *item;

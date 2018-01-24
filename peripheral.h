@@ -40,4 +40,6 @@ void peripheral_broadcast_event_mask(void);
 void peripheral_broadcast_log_mask(unsigned int equip_id);
 void peripheral_broadcast_msg_mask(struct diag_ssid_range_t *range);
 
+int peripheral_send(struct peripheral *peripheral, const void *ptr, size_t len);
+
 #endif
