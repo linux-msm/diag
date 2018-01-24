@@ -368,11 +368,9 @@ static int handle_extended_message_configuration(struct diag_client *client,
 			}
 			resp->header = req->header;
 			resp->range = req->range;
-			resp->rsvd = req->rsvd;
-			if (req->masks != NULL) {
-				memcpy(resp->rt_masks, req->masks, masks_size);
-			}
 			resp->status = DIAG_CMD_MSG_STATUS_SUCCESSFUL;
+			resp->rsvd = req->rsvd;
+			memcpy(resp->rt_masks, req->masks, masks_size);
 
 			peripheral_broadcast_msg_mask(&resp->range);
 		} else {
