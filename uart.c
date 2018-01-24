@@ -142,7 +142,7 @@ int diag_uart_open(const char *uartname, unsigned int baudrate)
 	client->fd = fd;
 	client->name = "UART client";
 
-	watch_add_readfd(ret, diag_uart_recv, client);
+	watch_add_readfd(client->fd, diag_uart_recv, client);
 	watch_add_writeq(client->fd, &client->outq);
 
 	diag_client_add(client);
