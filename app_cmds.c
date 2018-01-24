@@ -78,17 +78,16 @@ static int handle_extended_build_id(struct diag_client *client,
 		return -EMSGSIZE;
 
 	resp_size = sizeof(*resp) + strings_size;
-	resp = malloc(resp_size);
-	if (!resp)
-		err(1, "failed to allocate build id response\n");
 
+	resp = alloca(resp_size);
 	memset(resp, 0, resp_size);
-	resp->cmd_code = *(uint8_t*)buf;
+
+	resp->cmd_code = DIAG_CMD_EXTENDED_BUILD_ID;
 	resp->ver = DIAG_PROTOCOL_VERSION_NUMBER;
 	resp->msm_rev = MSM_REVISION_NUMBER;
 	resp->mobile_model_number = MOBILE_MODEL_NUMBER;
-	strncpy(resp->strings, MOBILE_SOFTWARE_REVISION, string1_size);
-	strncpy(resp->strings + string1_size, MOBILE_MODEL_STRING, string2_size);
+	strcpy(resp->strings, MOBILE_SOFTWARE_REVISION);
+	strcpy(resp->strings + string1_size, MOBILE_MODEL_STRING);
 
 	return hdlc_enqueue(&client->outq, resp, resp_size);
 }
