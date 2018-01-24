@@ -53,18 +53,9 @@
 static int handle_diag_version(struct diag_client *client, const void *buf,
 			       size_t len)
 {
-	struct {
-		uint8_t cmd_code;
-		uint8_t ver;
-	} __packed resp;
+	uint8_t resp[] = { DIAG_CMD_DIAG_VERSION_ID, DIAG_PROTOCOL_VERSION_NUMBER };
 
-	if (len != sizeof(uint8_t))
-		return -EMSGSIZE;
-
-	resp.cmd_code = *(uint8_t*)buf;
-	resp.ver = DIAG_PROTOCOL_VERSION_NUMBER;
-
-	return hdlc_enqueue(&client->outq, &resp, sizeof(resp));
+	return hdlc_enqueue(&client->outq, resp, sizeof(resp));
 }
 
 static int handle_extended_build_id(struct diag_client *client,
