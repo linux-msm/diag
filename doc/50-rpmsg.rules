@@ -1,0 +1,9 @@
+SUBSYSTEM=="rpmsg", KERNEL=="rpmsg_ctrl[0-9]*", ATTRS{rpmsg_name}=="?*", SYMLINK+="rpmsg/$attr{rpmsg_name}/ctrl"
+SUBSYSTEM=="rpmsg", KERNEL=="rpmsg[0-9]*", ATTR{name}=="?*", ATTRS{rpmsg_name}=="?*", SYMLINK+="rpmsg/$attr{rpmsg_name}/$attr{name}"
+
+ACTION=="add", SUBSYSTEM=="rpmsg", KERNEL=="rpmsg_ctrl[0-9]*", ATTRS{rpmsg_name}=="pronto", RUN+="/usr/bin/rpmsgexport /dev/$name APPS_RIVA_CTRL"
+ACTION=="add", SUBSYSTEM=="rpmsg", KERNEL=="rpmsg_ctrl[0-9]*", ATTRS{rpmsg_name}=="pronto", RUN+="/usr/bin/rpmsgexport /dev/$name APPS_RIVA_DATA"
+
+ACTION=="add", SUBSYSTEM=="rpmsg", KERNEL=="rpmsg_ctrl[0-9]*", ATTRS{rpmsg_name}=="hexagon", RUN+="/usr/bin/rpmsgexport /dev/$name DIAG"
+ACTION=="add", SUBSYSTEM=="rpmsg", KERNEL=="rpmsg_ctrl[0-9]*", ATTRS{rpmsg_name}=="hexagon", RUN+="/usr/bin/rpmsgexport /dev/$name DIAG_CNTL"
+ACTION=="add", SUBSYSTEM=="rpmsg", KERNEL=="rpmsg_ctrl[0-9]*", ATTRS{rpmsg_name}=="hexagon", RUN+="/usr/bin/rpmsgexport /dev/$name DIAG_CMD"
