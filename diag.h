@@ -58,18 +58,7 @@
 #define DIAG_CMD_SUBSYS_DISPATCH       75
 #define DIAG_CMD_SUBSYS_DISPATCH_V2	128
 
-struct diag_client {
-	const char *name;
-	int fd;
-	int in_fd;
-	int out_fd;
-
-	struct circ_buf recv_buf;
-	struct hdlc_decoder recv_decoder;
-
-	struct list_head outq;
-	struct list_head node;
-};
+struct diag_client;
 
 struct peripheral {
 	struct list_head  node;
