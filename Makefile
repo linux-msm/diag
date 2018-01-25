@@ -4,6 +4,7 @@ CFLAGS := -Wall -g -O2
 LDFLAGS := -ludev
 
 SRCS := app_cmds.c \
+	circ_buf.c \
 	common_cmds.c \
 	diag.c \
 	diag_cntl.c \
