@@ -30,6 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <err.h>
+#include <errno.h>
 #include <stdlib.h>
 
 #include "diag.h"
@@ -48,6 +50,42 @@ struct list_head diag_clients = LIST_INIT(diag_clients);
 void dm_add(struct diag_client *dm)
 {
 	list_add(&diag_clients, &dm->node);
+}
+
+/**
+ * dm_recv() - read and handle data from a DM
+ * @fd:		the file descriptor associated with the DM
+ * @data:	private data, must be a diag_client object
+ */
+int dm_recv(int fd, void* data)
+{
+	struct diag_client *dm = (struct diag_client *)data;
+	size_t msglen;
+	ssize_t n;
+	void *msg;
+	int ret = 0;
+
+	for (;;) {
+		n = circ_read(fd, &dm->recv_buf);
+		if (n < 0 && errno == EAGAIN) {
+			break;
+		} else if (n < 0) {
+			ret = -errno;
+			warn("Failed to read from %s\n", dm->name);
+			break;
+		}
+
+		for (;;) {
+			msg = hdlc_decode_one(&dm->recv_decoder, &dm->recv_buf,
+					      &msglen);
+			if (!msg)
+				break;
+
+			diag_client_handle_command(dm, msg, msglen);
+		}
+	}
+
+	return ret;
 }
 
 /**

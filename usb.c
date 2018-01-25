@@ -355,38 +355,6 @@ static int enable_udc(bool enable)
 	return 0;
 }
 
-static int diag_usb_recv(int fd, void* data)
-{
-	struct diag_client *client = (struct diag_client *)data;
-	size_t msglen;
-	ssize_t n;
-	void *msg;
-	int ret = 0;
-
-	for (;;) {
-		n = circ_read(fd, &client->recv_buf);
-		if (n < 0 && errno == EAGAIN) {
-			break;
-		} else if (n < 0) {
-			ret = -errno;
-			warn("Failed to read from %s\n", client->name);
-			break;
-		}
-
-		for (;;) {
-			msg = hdlc_decode_one(&client->recv_decoder,
-					      &client->recv_buf,
-					      &msglen);
-			if (!msg)
-				break;
-
-			diag_client_handle_command(client, msg, msglen);
-		}
-	}
-
-	return ret;
-}
-
 int diag_usb_open(const char *usbname, const char *serial)
 {
 	struct usb_handle *handle = NULL;
@@ -420,7 +388,7 @@ int diag_usb_open(const char *usbname, const char *serial)
 	client->out_fd = handle->bulk_out;
 	client->name = "USB client";
 
-	watch_add_readfd(client->in_fd, diag_usb_recv, client);
+	watch_add_readfd(client->in_fd, dm_recv, client);
 	watch_add_writeq(client->out_fd, &client->outq);
 
 	dm_add(client);

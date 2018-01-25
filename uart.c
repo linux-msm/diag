@@ -61,38 +61,6 @@ static unsigned int check_baudrate(unsigned int baudrate)
 	}
 }
 
-static int diag_uart_recv(int fd, void* data)
-{
-	struct diag_client *client = (struct diag_client *)data;
-	size_t msglen;
-	ssize_t n;
-	void *msg;
-	int ret = 0;
-
-	for (;;) {
-		n = circ_read(fd, &client->recv_buf);
-		if (n < 0 && errno == EAGAIN) {
-			break;
-		} else if (n < 0) {
-			ret = -errno;
-			warn("Failed to read from %s\n", client->name);
-			break;
-		}
-
-		for (;;) {
-			msg = hdlc_decode_one(&client->recv_decoder,
-					      &client->recv_buf,
-					      &msglen);
-			if (!msg)
-				break;
-
-			diag_client_handle_command(client, msg, msglen);
-		}
-	}
-
-	return ret;
-}
-
 int diag_uart_open(const char *uartname, unsigned int baudrate)
 {
 	struct diag_client *client;
@@ -145,7 +113,7 @@ int diag_uart_open(const char *uartname, unsigned int baudrate)
 	client->fd = fd;
 	client->name = "UART client";
 
-	watch_add_readfd(client->fd, diag_uart_recv, client);
+	watch_add_readfd(client->fd, dm_recv, client);
 	watch_add_writeq(client->fd, &client->outq);
 
 	dm_add(client);

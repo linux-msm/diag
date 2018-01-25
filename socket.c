@@ -50,8 +50,6 @@
 
 #define APPS_BUF_SIZE 16384
 
-static int diag_sock_recv(int fd, void* data);
-
 int diag_sock_connect(const char *hostname, unsigned short port)
 {
 	struct diag_client *client;
@@ -90,42 +88,10 @@ int diag_sock_connect(const char *hostname, unsigned short port)
 	client->fd = fd;
 	client->name = "DIAG CLIENT";
 
-	watch_add_readfd(client->fd, diag_sock_recv, client);
+	watch_add_readfd(client->fd, dm_recv, client);
 	watch_add_writeq(client->fd, &client->outq);
 
 	dm_add(client);
 
 	return fd;
-}
-
-static int diag_sock_recv(int fd, void* data)
-{
-	struct diag_client *client = (struct diag_client *)data;
-	size_t msglen;
-	ssize_t n;
-	void *msg;
-	int ret = 0;
-
-	for (;;) {
-		n = circ_read(fd, &client->recv_buf);
-		if (n < 0 && errno == EAGAIN) {
-			break;
-		} else if (n < 0) {
-			ret = -errno;
-			warn("Failed to read from %s\n", client->name);
-			break;
-		}
-
-		for (;;) {
-			msg = hdlc_decode_one(&client->recv_decoder,
-					      &client->recv_buf,
-					      &msglen);
-			if (!msg)
-				break;
-
-			diag_client_handle_command(client, msg, msglen);
-		}
-	}
-
-	return ret;
 }
