@@ -34,7 +34,20 @@
 
 #include <stdint.h>
 
+#include "circ_buf.h"
+
+struct circ_buf;
+
+struct hdlc_decoder {
+	char raw_buf[HDLC_BUF_SIZE];
+	char *raw;
+
+	uint8_t escape;
+};
+
 void *hdlc_encode(const void *src, size_t slen, size_t *dlen);
 
-void *hdlc_decode_one(void **buf, size_t *len, size_t *msglen);
+void *hdlc_decode_one(struct hdlc_decoder *hdlc, struct circ_buf *buf,
+		      size_t *msglen);
+
 #endif

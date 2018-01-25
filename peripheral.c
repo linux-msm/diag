@@ -85,22 +85,19 @@ static int diag_cmd_recv(int fd, void *data)
 
 static int diag_data_recv_hdlc(int fd, struct peripheral *peripheral)
 {
-	uint8_t buf[4096];
 	size_t msglen;
-	size_t len;
 	ssize_t n;
 	void *msg;
-	void *ptr;
 
 	for (;;) {
-		n = read(fd, buf, sizeof(buf));
+		n = circ_read(fd, &peripheral->recv_buf);
 		if (n < 0)
 			return -errno;
 
-		ptr = buf;
-		len = n;
 		for (;;) {
-			msg = hdlc_decode_one(&ptr, &len, &msglen);
+			msg = hdlc_decode_one(&peripheral->recv_decoder,
+					      &peripheral->recv_buf,
+					      &msglen);
 			if (!msg)
 				break;
 

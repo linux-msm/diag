@@ -34,6 +34,8 @@
 
 #include <stdint.h>
 
+#include "circ_buf.h"
+#include "hdlc.h"
 #include "list.h"
 
 #define DEFAULT_SOCKET_PORT 2500
@@ -62,6 +64,9 @@ struct diag_client {
 	int in_fd;
 	int out_fd;
 
+	struct circ_buf recv_buf;
+	struct hdlc_decoder recv_decoder;
+
 	struct list_head outq;
 	struct list_head node;
 };
@@ -79,6 +84,9 @@ struct peripheral {
 	int cntl_fd;
 	int data_fd;
 	int cmd_fd;
+
+	struct circ_buf recv_buf;
+	struct hdlc_decoder recv_decoder;
 };
 
 struct diag_cmd {

@@ -29,8 +29,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "hdlc.h"
+#include "util.h"
 
 /*
  * HDLC frame check is performed by a reversed CRC-CCITT-16 with polynomial
@@ -122,37 +124,39 @@ void *hdlc_encode(const void *src, size_t slen, size_t *dlen)
 	return dst;
 }
 
-void *hdlc_decode_one(void **buf, size_t *len, size_t *msglen)
+void *hdlc_decode_one(struct hdlc_decoder *hdlc, struct circ_buf *buf,
+		      size_t *msglen)
 {
-	uint8_t *end = *buf + *len;
-	uint8_t *dst = *buf;
-	uint8_t *src = *buf;
-	uint8_t *msg = *buf;
-	uint8_t escape = 0;
 	uint8_t ch;
 
-	for (;;) {
-		if (src >= end)
-			return NULL;
+	if (!hdlc->raw)
+		hdlc->raw = hdlc->raw_buf;
 
-		ch = *src++;
+	for (;;) {
+		if (buf->tail == buf->head)
+			return 0;
+
+		ch = buf->buf[buf->tail];
+		buf->tail = (buf->tail + 1) & (HDLC_BUF_SIZE - 1);
 
 		if (ch == 0x7e) {
 			break;
 		} else if (ch == 0x7d) {
-			escape = 0x20;
+			hdlc->escape = 0x20;
 		} else {
-			*dst++ = ch ^ escape;
-			escape = 0;
+			*hdlc->raw++ = ch ^ hdlc->escape;
+			hdlc->escape = 0;
 		}
+
 	}
 
-	*len -= src - msg;
-	*buf = src;
+	hdlc->raw--;
+	hdlc->raw--;
 
-	dst--;
-	dst--;
+	*msglen = hdlc->raw - hdlc->raw_buf;
 
-	*msglen = dst - msg;
-	return msg;
+	hdlc->raw = hdlc->raw_buf;
+	hdlc->escape = 0;
+
+	return hdlc->raw_buf;
 }
