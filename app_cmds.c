@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "diag.h"
+#include "dm.h"
 #include "hdlc.h"
 #include "util.h"
 
@@ -55,7 +56,7 @@ static int handle_diag_version(struct diag_client *client, const void *buf,
 {
 	uint8_t resp[] = { DIAG_CMD_DIAG_VERSION_ID, DIAG_PROTOCOL_VERSION_NUMBER };
 
-	return hdlc_enqueue(&client->outq, resp, sizeof(resp));
+	return dm_send(client, resp, sizeof(resp));
 }
 
 static int handle_extended_build_id(struct diag_client *client,
@@ -89,13 +90,13 @@ static int handle_extended_build_id(struct diag_client *client,
 	strcpy(resp->strings, MOBILE_SOFTWARE_REVISION);
 	strcpy(resp->strings + string1_size, MOBILE_MODEL_STRING);
 
-	return hdlc_enqueue(&client->outq, resp, resp_size);
+	return dm_send(client, resp, resp_size);
 }
 
 static int handle_keep_alive(struct diag_client *client, const void *buf,
 			     size_t len)
 {
-	return hdlc_enqueue(&client->outq, buf, len);
+	return dm_send(client, buf, len);
 }
 
 void register_app_cmds(void)

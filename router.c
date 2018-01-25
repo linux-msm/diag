@@ -36,6 +36,7 @@
 #include <string.h>
 
 #include "diag.h"
+#include "dm.h"
 #include "hdlc.h"
 #include "peripheral.h"
 #include "util.h"
@@ -110,7 +111,7 @@ static void diag_rsp_bad_command(struct diag_client *client, uint8_t *msg,
 	buf[0] = error_code;
 	memcpy(buf + 1, msg, len);
 
-	hdlc_enqueue(&client->outq, buf, len + 1);
+	dm_send(client, buf, len + 1);
 
 	free(buf);
 }

@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "diag.h"
+#include "dm.h"
 #include "hdlc.h"
 #include "masks.h"
 #include "peripheral.h"
@@ -98,7 +99,7 @@ static int handle_logging_configuration(struct diag_client *client,
 
 		peripheral_broadcast_log_mask(0);
 
-		hdlc_enqueue(&client->outq, &resp, sizeof(resp));
+		dm_send(client, &resp, sizeof(resp));
 		break;
 	}
 	case DIAG_CMD_OP_GET_LOG_RANGE: {
@@ -115,7 +116,7 @@ static int handle_logging_configuration(struct diag_client *client,
 		diag_cmd_get_log_range(resp.ranges, MAX_EQUIP_ID);
 		resp.status = DIAG_CMD_STATUS_SUCCESS;
 
-		hdlc_enqueue(&client->outq, &resp, sizeof(resp));
+		dm_send(client, &resp, sizeof(resp));
 		break;
 	}
 	case DIAG_CMD_OP_SET_LOG_MASK: {
@@ -144,7 +145,7 @@ static int handle_logging_configuration(struct diag_client *client,
 
 		peripheral_broadcast_log_mask(resp->mask_structure.equip_id);
 
-		hdlc_enqueue(&client->outq, resp, resp_size);
+		dm_send(client, resp, resp_size);
 		free(resp);
 
 		break;
@@ -193,7 +194,7 @@ static int handle_logging_configuration(struct diag_client *client,
 
 		peripheral_broadcast_log_mask(resp->mask_structure.equip_id);
 
-		hdlc_enqueue(&client->outq, resp, resp_size);
+		dm_send(client, resp, resp_size);
 		free(resp);
 
 		break;
@@ -247,7 +248,7 @@ static int handle_extended_message_configuration(struct diag_client *client,
 		}
 		resp->status = DIAG_CMD_MSG_STATUS_SUCCESSFUL;
 
-		hdlc_enqueue(&client->outq, resp, resp_size);
+		dm_send(client, resp, resp_size);
 		free(resp);
 
 		break;
@@ -295,7 +296,7 @@ static int handle_extended_message_configuration(struct diag_client *client,
 			resp->status = DIAG_CMD_MSG_STATUS_UNSUCCESSFUL;
 		}
 
-		hdlc_enqueue(&client->outq, resp, resp_size);
+		dm_send(client, resp, resp_size);
 
 		break;
 	}
@@ -334,7 +335,7 @@ static int handle_extended_message_configuration(struct diag_client *client,
 			resp->status = DIAG_CMD_MSG_STATUS_UNSUCCESSFUL;
 		}
 
-		hdlc_enqueue(&client->outq, resp, resp_size);
+		dm_send(client, resp, resp_size);
 		free(masks);
 
 		break;
@@ -385,7 +386,7 @@ static int handle_extended_message_configuration(struct diag_client *client,
 			resp->status = DIAG_CMD_MSG_STATUS_UNSUCCESSFUL;
 		}
 
-		hdlc_enqueue(&client->outq, resp, resp_size);
+		dm_send(client, resp, resp_size);
 		free(resp);
 
 		break;
@@ -414,7 +415,7 @@ static int handle_extended_message_configuration(struct diag_client *client,
 
 		peripheral_broadcast_msg_mask(NULL);
 
-		hdlc_enqueue(&client->outq, &resp, sizeof(resp));
+		dm_send(client, &resp, sizeof(resp));
 		break;
 	}
 	default:
@@ -476,7 +477,7 @@ static int handle_event_get_mask(struct diag_client *client, const void *buf,
 		resp->error_code = DIAG_CMD_EVENT_ERROR_CODE_FAIL;
 	}
 
-	hdlc_enqueue(&client->outq, resp, resp_size);
+	dm_send(client, resp, resp_size);
 	free(resp);
 
 	return 0;
@@ -531,7 +532,7 @@ static int handle_event_set_mask(struct diag_client *client,
 		resp->error_code = DIAG_CMD_EVENT_ERROR_CODE_FAIL;
 	}
 
-	hdlc_enqueue(&client->outq, resp, resp_size);
+	dm_send(client, resp, resp_size);
 	free(resp);
 
 	return 0;
@@ -558,7 +559,7 @@ static int handle_event_report_control(struct diag_client *client,
 	pkt.cmd_code = DIAG_CMD_EVENT_REPORT_CONTROL;
 	pkt.length = 0;
 
-	hdlc_enqueue(&client->outq, &pkt, sizeof(pkt));
+	dm_send(client, &pkt, sizeof(pkt));
 
 	return 0;
 }
