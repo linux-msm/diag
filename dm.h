@@ -34,7 +34,9 @@
 
 #include "diag.h"
 
-void dm_add(struct diag_client *client);
+struct diag_client;
+
+void dm_add(const char *name, int in_fd, int out_fd);
 int dm_recv(int fd, void* data);
 ssize_t dm_send(struct diag_client *dm, const void *ptr, size_t len);
 void dm_broadcast(const void *ptr, size_t len);

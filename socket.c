@@ -52,7 +52,6 @@
 
 int diag_sock_connect(const char *hostname, unsigned short port)
 {
-	struct diag_client *client;
 	struct sockaddr_in addr;
 	struct hostent *host;
 	int ret;
@@ -81,17 +80,7 @@ int diag_sock_connect(const char *hostname, unsigned short port)
 
 	printf("Connected to %s:%d\n", hostname, port);
 
-	client = calloc(1, sizeof(*client));
-	if (!client)
-		err(1, "failed to allocate client context\n");
-
-	client->fd = fd;
-	client->name = "DIAG CLIENT";
-
-	watch_add_readfd(client->fd, dm_recv, client);
-	watch_add_writeq(client->fd, &client->outq);
-
-	dm_add(client);
+	dm_add("DIAG CLIENT", fd, fd);
 
 	return fd;
 }

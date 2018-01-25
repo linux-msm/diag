@@ -358,7 +358,6 @@ static int enable_udc(bool enable)
 int diag_usb_open(const char *usbname, const char *serial)
 {
 	struct usb_handle *handle = NULL;
-	struct diag_client *client;
 
 	if (usbname && usbname[0])
 		g_usb_config.dev_name = usbname;
@@ -380,18 +379,7 @@ int diag_usb_open(const char *usbname, const char *serial)
 
 	printf("Connected to %s %s\n", g_usb_config.dev_name, g_usb_config.serial);
 
-	client = calloc(1, sizeof(*client));
-	if (!client)
-		err(1, "failed to allocate client context\n");
-
-	client->in_fd = handle->bulk_in;
-	client->out_fd = handle->bulk_out;
-	client->name = "USB client";
-
-	watch_add_readfd(client->in_fd, dm_recv, client);
-	watch_add_writeq(client->out_fd, &client->outq);
-
-	dm_add(client);
+	dm_add("USB client", handle->bulk_in, handle->bulk_out);
 
 	return handle->control;
 }

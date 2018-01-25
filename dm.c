@@ -33,9 +33,11 @@
 #include <err.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "diag.h"
 #include "dm.h"
+#include "watch.h"
 
 /**
  * DOC: Diagnostic Monitor
@@ -47,8 +49,21 @@ struct list_head diag_clients = LIST_INIT(diag_clients);
  * dm_add() - register new DM
  * @dm:		DM object to register
  */
-void dm_add(struct diag_client *dm)
+void dm_add(const char *name, int in_fd, int out_fd)
 {
+	struct diag_client *dm;
+
+	dm = calloc(1, sizeof(*dm));
+	if (!dm)
+		err(1, "failed to allocate DM context\n");
+
+	dm->name = strdup(name);
+	dm->in_fd = in_fd;
+	dm->out_fd = out_fd;
+
+	watch_add_readfd(dm->in_fd, dm_recv, dm);
+	watch_add_writeq(dm->out_fd, &dm->outq);
+
 	list_add(&diag_clients, &dm->node);
 }
 

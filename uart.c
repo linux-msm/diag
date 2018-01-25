@@ -63,7 +63,6 @@ static unsigned int check_baudrate(unsigned int baudrate)
 
 int diag_uart_open(const char *uartname, unsigned int baudrate)
 {
-	struct diag_client *client;
 	int ret;
 	int fd;
 	struct termios options, options_save;
@@ -106,17 +105,7 @@ int diag_uart_open(const char *uartname, unsigned int baudrate)
 
 	printf("Connected to %s@%d\n", uartname, baudrate);
 
-	client = calloc(1, sizeof(*client));
-	if (!client)
-		err(1, "failed to allocate client context\n");
-
-	client->fd = fd;
-	client->name = "UART client";
-
-	watch_add_readfd(client->fd, dm_recv, client);
-	watch_add_writeq(client->fd, &client->outq);
-
-	dm_add(client);
+	dm_add("UART client", fd, fd);
 
 	return fd;
 }
