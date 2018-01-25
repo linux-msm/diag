@@ -47,6 +47,7 @@
 #include <signal.h>
 
 #include "diag.h"
+#include "dm.h"
 #include "hdlc.h"
 #include "util.h"
 #include "watch.h"
@@ -422,7 +423,7 @@ int diag_usb_open(const char *usbname, const char *serial)
 	watch_add_readfd(client->in_fd, diag_usb_recv, client);
 	watch_add_writeq(client->out_fd, &client->outq);
 
-	diag_client_add(client);
+	dm_add(client);
 
 	return handle->control;
 }

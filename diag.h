@@ -103,13 +103,10 @@ void queue_push(struct list_head *queue, const void *msg, size_t msglen);
 
 extern struct list_head diag_cmds;
 
-void diag_forward_response(const void *ptr, size_t len);
-
 int diag_sock_connect(const char *hostname, unsigned short port);
 int diag_uart_open(const char *uartname, unsigned int baudrate);
 int diag_usb_open(const char *usbname, const char *serial);
 
-void diag_client_add(struct diag_client *client);
 int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len);
 
 int hdlc_enqueue(struct list_head *queue, const void *buf, size_t msglen);

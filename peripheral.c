@@ -47,6 +47,7 @@
 
 #include "diag.h"
 #include "diag_cntl.h"
+#include "dm.h"
 #include "hdlc.h"
 #include "list.h"
 #include "peripheral.h"
@@ -101,7 +102,7 @@ static int diag_data_recv_hdlc(int fd, struct peripheral *peripheral)
 			if (!msg)
 				break;
 
-			diag_forward_response(msg, msglen);
+			dm_broadcast(msg, msglen);
 		}
 	}
 
@@ -118,7 +119,7 @@ static int diag_data_recv_raw(int fd, struct peripheral *peripheral)
 		if (n < 0)
 			return -errno;
 
-		diag_forward_response(buf, n);
+		dm_broadcast(buf, n);
 	}
 
 	/* Not reached */

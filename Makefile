@@ -8,6 +8,7 @@ SRCS := app_cmds.c \
 	common_cmds.c \
 	diag.c \
 	diag_cntl.c \
+	dm.c \
 	hdlc.c \
 	masks.c \
 	mbuf.c \

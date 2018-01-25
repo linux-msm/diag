@@ -46,7 +46,6 @@
 #include "watch.h"
 
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
-struct list_head diag_clients = LIST_INIT(diag_clients);
 
 void queue_push(struct list_head *queue, const void *msg, size_t msglen)
 {
@@ -58,23 +57,6 @@ void queue_push(struct list_head *queue, const void *msg, size_t msglen)
 	memcpy(ptr, msg, msglen);
 
 	list_add(queue, &mbuf->node);
-}
-
-void diag_forward_response(const void *ptr, size_t len)
-{
-	struct diag_client *client;
-	struct list_head *item;
-
-	list_for_each(item, &diag_clients) {
-		client = container_of(item, struct diag_client, node);
-
-		hdlc_enqueue(&client->outq, ptr, len);
-	}
-}
-
-void diag_client_add(struct diag_client *client)
-{
-	list_add(&diag_clients, &client->node);
 }
 
 static void usage(void)

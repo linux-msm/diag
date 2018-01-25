@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 #include "diag.h"
+#include "dm.h"
 #include "hdlc.h"
 #include "watch.h"
 
@@ -92,7 +93,7 @@ int diag_sock_connect(const char *hostname, unsigned short port)
 	watch_add_readfd(client->fd, diag_sock_recv, client);
 	watch_add_writeq(client->fd, &client->outq);
 
-	diag_client_add(client);
+	dm_add(client);
 
 	return fd;
 }

@@ -37,6 +37,7 @@
 #include <unistd.h>
 
 #include "diag.h"
+#include "dm.h"
 #include "hdlc.h"
 #include "watch.h"
 
@@ -147,7 +148,7 @@ int diag_uart_open(const char *uartname, unsigned int baudrate)
 	watch_add_readfd(client->fd, diag_uart_recv, client);
 	watch_add_writeq(client->fd, &client->outq);
 
-	diag_client_add(client);
+	dm_add(client);
 
 	return fd;
 }
