@@ -57,6 +57,7 @@ int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
 		err(1, "failed to allocate hdlc destination buffer");
 
 	queue_push(queue, outbuf, outlen);
+	free(outbuf);
 
 	return 0;
 }
