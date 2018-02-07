@@ -258,11 +258,9 @@ void diag_cntl_send_log_mask(struct peripheral *peripheral, uint32_t equip_id)
 		equip_id = 0;
 	}
 	len += mask_size;
-	pkt = malloc(len);
-	if (!pkt) {
-		warn("Failed to allocate response packet\n");
-		return;
-	}
+
+	pkt = alloca(len);
+
 	pkt->hdr.cmd = DIAG_CNTL_CMD_LOG_MASK;
 	pkt->hdr.len = len - sizeof(struct diag_cntl_hdr);
 	pkt->stream_id = 1;
@@ -276,7 +274,6 @@ void diag_cntl_send_log_mask(struct peripheral *peripheral, uint32_t equip_id)
 	}
 
 	queue_push(&peripheral->cntlq, pkt, len);
-	free(pkt);
 }
 
 void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_range_t *range)
@@ -308,11 +305,9 @@ void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_ran
 	}
 	mask_size = num_items * sizeof(*mask);
 	len += mask_size;
-	pkt = malloc(len);
-	if (!pkt) {
-		warn("Failed to allocate response packet\n");
-		return;
-	}
+
+	pkt = alloca(len);
+
 	pkt->hdr.cmd = DIAG_CNTL_CMD_MSG_MASK;
 	pkt->hdr.len = len - sizeof(struct diag_cntl_hdr);
 	pkt->stream_id = 1;
@@ -326,7 +321,6 @@ void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_ran
 	}
 
 	queue_push(&peripheral->cntlq, pkt, len);
-	free(pkt);
 }
 
 void diag_cntl_send_masks(struct peripheral *peripheral)
@@ -364,11 +358,9 @@ void diag_cntl_send_event_mask(struct peripheral *peripheral)
 		}
 	}
 	len += mask_size;
-	pkt = malloc(len);
-	if (!pkt) {
-		warn("Failed to allocate response packet\n");
-		return;
-	}
+
+	pkt = alloca(len);
+
 	pkt->hdr.cmd = DIAG_CNTL_CMD_EVENT_MASK;
 	pkt->hdr.len = len - sizeof(struct diag_cntl_hdr);
 	pkt->stream_id = 1;
@@ -381,7 +373,6 @@ void diag_cntl_send_event_mask(struct peripheral *peripheral)
 	}
 
 	queue_push(&peripheral->cntlq, pkt, len);
-	free(pkt);
 }
 
 static int diag_cntl_deregister(struct peripheral *peripheral,
@@ -433,11 +424,8 @@ void diag_cntl_send_feature_mask(struct peripheral *peripheral)
 	       DIAG_FEATURE_DIAG_MASTER_SETS_COMMON_MASK | 
 	       DIAG_FEATURE_APPS_HDLC_ENCODE ;
 
-	pkt = malloc(len);
-	if (!pkt) {
-		warn("Failed to allocate response packet\n");
-		return;
-	}
+	pkt = alloca(len);
+
 	pkt->hdr.cmd = DIAG_CNTL_CMD_FEATURE_MASK;
 	pkt->hdr.len = len - sizeof(struct diag_cntl_hdr);
 	pkt->mask_len = 2;
