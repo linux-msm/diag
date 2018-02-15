@@ -183,6 +183,7 @@ static void diag_build_time_mask_exit(void)
 	if (mask) {
 		for (i = 0; i < MSG_MASK_TBL_CNT; i++, mask++)
 			free(mask->ptr);
+		free(msg_bt_mask.ptr);
 	}
 }
 
