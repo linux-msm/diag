@@ -467,7 +467,6 @@ int diag_cmd_set_msg_mask(struct diag_ssid_range_t range, const uint32_t *mask)
 	uint32_t num_msgs = 0;
 	struct diag_msg_mask_t *mask_next = NULL;
 	uint32_t offset = 0;
-	uint32_t last_range;
 	void *tmp_buf;
 	int i;
 
@@ -485,7 +484,6 @@ int diag_cmd_set_msg_mask(struct diag_ssid_range_t range, const uint32_t *mask)
 			continue;
 		}
 
-		last_range = msg_item->range_tools;
 		mask_next = NULL;
 		num_msgs = range.ssid_last - range.ssid_first + 1;
 		if (num_msgs > MAX_SSID_PER_RANGE) {
@@ -500,21 +498,19 @@ int diag_cmd_set_msg_mask(struct diag_ssid_range_t range, const uint32_t *mask)
 			if (num_msgs != MAX_SSID_PER_RANGE)
 				msg_item->ssid_last_tools = range.ssid_last;
 			msg_item->range_tools = msg_item->ssid_last_tools - msg_item->ssid_first + 1;
-			tmp_buf = calloc(msg_item->range_tools, sizeof(*mask));
+			tmp_buf = realloc(msg_item->ptr, msg_item->range_tools * sizeof(*mask));
 			if (!tmp_buf) {
 				msg_mask.status = DIAG_CTRL_MASK_INVALID;
 				warn("Failed to reallocate msg mask\n");
 
 				return -errno;
 			}
-			memcpy(tmp_buf, msg_item->ptr, last_range * sizeof(*mask));
-			free(msg_item->ptr);
 			msg_item->ptr = tmp_buf;
 		}
 
 		offset = range.ssid_first - msg_item->ssid_first;
 		if (offset + num_msgs > msg_item->range_tools) {
-			printf("diag: Not in msg mask range, num_msgs: %d, offset: %d\n",
+			warn("diag: Not in msg mask range, num_msgs: %d, offset: %d\n",
 			       num_msgs, offset);
 
 			return 1;
