@@ -565,14 +565,13 @@ int diag_cmd_update_event_mask(uint16_t num_bits, const uint8_t *mask)
 	void *tmp_buf;
 
 	if (num_bits > event_max_num_bits ) {
-		tmp_buf = malloc(BITS_TO_BYTES(num_bits));
+		tmp_buf = realloc(event_mask.ptr, BITS_TO_BYTES(num_bits));
 		if (!tmp_buf) {
 			event_mask.status = DIAG_CTRL_MASK_INVALID;
 			warn("Failed to reallocate event mask\n");
 
 			return -errno;
 		}
-		free(event_mask.ptr);
 
 		event_mask.ptr = tmp_buf;
 		event_max_num_bits = num_bits;
