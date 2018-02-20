@@ -354,7 +354,7 @@ void diag_cntl_send_event_mask(struct peripheral *peripheral)
 
 	if (status == DIAG_CTRL_MASK_VALID) {
 		if (diag_cmd_get_event_mask(event_max_num_bits , &mask) == 0) {
-			mask_size = EVENT_COUNT_TO_BYTES(event_max_num_bits );
+			mask_size = BITS_TO_BYTES(event_max_num_bits);
 		}
 	}
 	len += mask_size;
