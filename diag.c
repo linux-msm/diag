@@ -137,10 +137,10 @@ int main(int argc, char **argv)
 
 	peripheral_init();
 
+	diag_masks_init();
+
 	register_app_cmds();
 	register_common_cmds();
-
-	diag_masks_init();
 
 	watch_run();
 
