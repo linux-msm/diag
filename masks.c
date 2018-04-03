@@ -320,14 +320,13 @@ int diag_cmd_set_log_mask(uint8_t equip_id, uint32_t *num_items, uint8_t *mask, 
 		memset(log_item->ptr, 0, log_item->range_tools);
 
 		if (*mask_size > log_item->range_tools) {
-			tmp_buf = malloc(*mask_size);
+			tmp_buf = realloc(log_item->ptr, *mask_size);
 			if (!tmp_buf) {
 				log_mask.status = DIAG_CTRL_MASK_INVALID;
 				warn("Failed to reallocate log mask\n");
 
 				return -errno;
 			}
-			free(log_item->ptr);
 			log_item->ptr = tmp_buf;
 			memset(log_item->ptr, 0, *mask_size);
 			log_item->range_tools = *mask_size;
