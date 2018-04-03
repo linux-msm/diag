@@ -45,4 +45,5 @@ void print_hex_dump(const char *prefix, const void *buf, size_t len);
 
 #define __packed __attribute__((packed))
 
+#define BITS_TO_BYTES(n) (((n) + 7) / 8)
 #endif

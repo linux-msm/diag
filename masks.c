@@ -196,8 +196,8 @@ static int diag_create_log_mask_table(void)
 		mask->equip_id = equip_id;
 		mask->num_items = LOG_GET_ITEM_NUM(log_code_last_tbl[equip_id]);
 		mask->num_items_tools = mask->num_items;
-		if (LOG_ITEMS_TO_SIZE(mask->num_items) > MAX_ITEMS_PER_EQUIP_ID)
-			mask->range = LOG_ITEMS_TO_SIZE(mask->num_items);
+		if (BITS_TO_BYTES(mask->num_items) > MAX_ITEMS_PER_EQUIP_ID)
+			mask->range = BITS_TO_BYTES(mask->num_items);
 		else
 			mask->range = MAX_ITEMS_PER_EQUIP_ID;
 		mask->range_tools = mask->range;
@@ -312,11 +312,11 @@ int diag_cmd_set_log_mask(uint8_t equip_id, uint32_t *num_items, uint8_t *mask, 
 				"request num_items=%u range=%u\n",
 				log_item->equip_id,
 				log_item->num_items_tools, log_item->range_tools,
-				*num_items, LOG_ITEMS_TO_SIZE(*num_items));
+				*num_items, BITS_TO_BYTES(*num_items));
 #endif
 
 		log_item->num_items_tools = MIN(*num_items, MAX_ITEMS_ALLOWED);
-		*mask_size = LOG_ITEMS_TO_SIZE(log_item->num_items_tools);
+		*mask_size = BITS_TO_BYTES(log_item->num_items_tools);
 		memset(log_item->ptr, 0, log_item->range_tools);
 
 		if (*mask_size > log_item->range_tools) {
@@ -353,7 +353,7 @@ int diag_cmd_get_log_mask(uint32_t equip_id, uint32_t *num_items, uint8_t ** mas
 		}
 
 		*num_items = log_item->num_items_tools;
-		*mask_size = LOG_ITEMS_TO_SIZE(log_item->num_items_tools);
+		*mask_size = BITS_TO_BYTES(log_item->num_items_tools);
 		*mask = malloc(*mask_size);
 		if (!*mask) {
 			warn("Failed to allocate log mask\n");
@@ -547,7 +547,7 @@ uint8_t diag_get_event_mask_status()
 
 int diag_cmd_get_event_mask(uint16_t num_bits, uint8_t **mask)
 {
-	uint32_t mask_size = EVENT_COUNT_TO_BYTES(num_bits);
+	uint32_t mask_size = BITS_TO_BYTES(num_bits);
 
 	if (num_bits > event_max_num_bits) {
 		return 1;
@@ -569,7 +569,7 @@ int diag_cmd_update_event_mask(uint16_t num_bits, const uint8_t *mask)
 	void *tmp_buf;
 
 	if (num_bits > event_max_num_bits ) {
-		tmp_buf = malloc(EVENT_COUNT_TO_BYTES(num_bits));
+		tmp_buf = malloc(BITS_TO_BYTES(num_bits));
 		if (!tmp_buf) {
 			event_mask.status = DIAG_CTRL_MASK_INVALID;
 			warn("Failed to reallocate event mask\n");
@@ -580,9 +580,9 @@ int diag_cmd_update_event_mask(uint16_t num_bits, const uint8_t *mask)
 
 		event_mask.ptr = tmp_buf;
 		event_max_num_bits = num_bits;
-		event_mask.mask_len = EVENT_COUNT_TO_BYTES(num_bits);
+		event_mask.mask_len = BITS_TO_BYTES(num_bits);
 	}
-	memcpy(event_mask.ptr, mask, EVENT_COUNT_TO_BYTES(num_bits));
+	memcpy(event_mask.ptr, mask, BITS_TO_BYTES(num_bits));
 	event_mask.status = DIAG_CTRL_MASK_VALID;
 
 	return 0;

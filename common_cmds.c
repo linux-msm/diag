@@ -127,7 +127,7 @@ static int handle_logging_configuration(struct diag_client *client,
 			struct diag_log_cmd_mask mask_structure;
 		} __packed *resp;
 		uint32_t resp_size = sizeof(*resp);
-		uint32_t mask_size = sizeof(*mask_to_set) + LOG_ITEMS_TO_SIZE(mask_to_set->num_items);
+		uint32_t mask_size = sizeof(*mask_to_set) + BITS_TO_BYTES(mask_to_set->num_items);
 
 		if (sizeof(*request_header) + mask_size != len)
 			return -EMSGSIZE;
@@ -450,7 +450,7 @@ static int handle_event_get_mask(struct diag_client *client, const void *buf,
 		return -EMSGSIZE;
 
 	if (diag_cmd_get_event_mask(num_bits, &mask) == 0) {
-		mask_size = EVENT_COUNT_TO_BYTES(num_bits);
+		mask_size = BITS_TO_BYTES(num_bits);
 		resp_size += mask_size;
 		resp = malloc(resp_size);
 		if (!resp) {
@@ -501,7 +501,7 @@ static int handle_event_set_mask(struct diag_client *client,
 		uint8_t mask[0];
 	} __packed *resp;
 	uint32_t resp_size = sizeof(*resp);
-	uint16_t mask_size = EVENT_COUNT_TO_BYTES(req->num_bits);
+	uint16_t mask_size = BITS_TO_BYTES(req->num_bits);
 
 	if (sizeof(*req) + mask_size != len)
 		return -EMSGSIZE;

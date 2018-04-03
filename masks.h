@@ -82,10 +82,7 @@ static const uint32_t ssid_last_arr[NUM_OF_MASK_RANGES] =
 
 #define LOG_GET_ITEM_NUM(xx_code)	(xx_code & 0x0FFF)
 #define LOG_GET_EQUIP_ID(xx_code)	((xx_code & 0xF000) >> 12)
-#define LOG_ITEMS_TO_SIZE(num_items)	((num_items+7)/8)
-#define LOG_SIZE_TO_ITEMS(size)		((8*size) - 7)
 #define MSG_RANGE_TO_SIZE(range)	(((range).ssid_last - (range).ssid_first +1) * 4)
-#define EVENT_COUNT_TO_BYTES(count)	((count/8))
 
 #define MAX_EQUIP_ID	16
 #define EVENT_MASK_SIZE 513
