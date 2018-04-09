@@ -43,7 +43,7 @@ struct circ_buf {
 
 #define CIRC_SPACE(buf) (((buf)->tail - (buf)->head - 1) & (HDLC_BUF_SIZE - 1))
 
-#define CIRC_SPACE_TO_END(buf) MIN(CIRC_SPACE(buf), HDLC_BUF_SIZE - (buf)->head - 1)
+#define CIRC_SPACE_TO_END(buf) MIN(CIRC_SPACE(buf), HDLC_BUF_SIZE - (buf)->head)
 
 ssize_t circ_read(int fd, struct circ_buf *buf);
 
