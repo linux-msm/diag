@@ -67,6 +67,7 @@ struct peripheral {
 
 	unsigned long features;
 
+	struct list_head cmdq;
 	struct list_head cntlq;
 	struct list_head dataq;
 
@@ -76,7 +77,12 @@ struct peripheral {
 
 	struct circ_buf recv_buf;
 	struct hdlc_decoder recv_decoder;
+
+	int (*send)(struct peripheral *perif, const void *ptr, size_t len);
+	void (*close)(struct peripheral *perif);
 };
+
+extern struct list_head peripherals;
 
 struct diag_cmd {
 	struct list_head node;

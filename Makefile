@@ -1,7 +1,12 @@
+HAVE_LIBUDEV=1
+
 DIAG := diag
 
 CFLAGS := -Wall -g -O2
-LDFLAGS := -ludev
+ifeq ($(HAVE_LIBUDEV),1)
+CFLAGS += -DHAS_LIBUDEV=1
+LDFLAGS += -ludev
+endif
 
 SRCS := app_cmds.c \
 	circ_buf.c \
@@ -19,6 +24,10 @@ SRCS := app_cmds.c \
 	usb.c \
 	util.c \
 	watch.c
+
+ifeq ($(HAVE_LIBUDEV),1)
+SRCS += peripheral-rpmsg.c
+endif
 
 OBJS := $(SRCS:.c=.o)
 
