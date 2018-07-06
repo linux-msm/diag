@@ -232,6 +232,8 @@ static int diag_cntl_feature_mask(struct peripheral *peripheral,
 		printf(" MASK-CENTERALIZATION");
 	if (mask & DIAG_FEATURE_SOCKETS_ENABLED)
 		printf(" SOCKETS");
+	if (mask & DIAG_FEATURE_DIAG_ID)
+		printf(" DIAG-ID");
 
 	printf(" (0x%x)\n", mask);
 

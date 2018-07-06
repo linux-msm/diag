@@ -54,6 +54,9 @@
 #define DIAG_FEATURE_PERIPHERAL_BUFFERING			BIT(10)
 #define DIAG_FEATURE_MASK_CENTRALIZATION			BIT(11)
 #define DIAG_FEATURE_SOCKETS_ENABLED				BIT(13)
+#define DIAG_FEATURE_DCI_EXTENDED_HEADER			BIT(14)
+#define DIAG_FEATURE_DIAG_ID					BIT(15)
+#define DIAG_FEATURE_PKT_HEADER_UNTAG				BIT(16)
 
 #define DIAG_CMD_SUBSYS_DISPATCH       75
 #define DIAG_CMD_SUBSYS_DISPATCH_V2	128
@@ -74,6 +77,8 @@ struct peripheral {
 	int cntl_fd;
 	int data_fd;
 	int cmd_fd;
+
+	int diag_id;
 
 	bool sockets;
 
