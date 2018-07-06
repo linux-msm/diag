@@ -435,22 +435,10 @@ void diag_cntl_send_feature_mask(struct peripheral *peripheral)
 	queue_push(&peripheral->cntlq, pkt, len);
 }
 
-int diag_cntl_recv(int fd, void *data)
+int diag_cntl_recv(struct peripheral *peripheral, const void *buf, size_t n)
 {
-	struct peripheral *peripheral = data;
 	struct diag_cntl_hdr *hdr;
-	uint8_t buf[4096];
 	size_t offset = 0;
-	ssize_t n;
-
-	n = read(fd, buf, sizeof(buf));
-	if (n < 0) {
-		if (errno != EAGAIN) {
-			warn("failed to read from cntl channel");
-			peripheral_close(peripheral);
-		}
-		return 0;
-	}
 
 	for (;;) {
 		if (offset + sizeof(struct diag_cntl_hdr) > n)

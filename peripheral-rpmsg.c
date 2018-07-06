@@ -237,6 +237,24 @@ static const char *peripheral_udev_get_remoteproc(struct udev_device *dev)
 	return peripheral_udev_get_remoteproc(parent);
 }
 
+static int rpmsg_perif_cntl_recv(int fd, void *data)
+{
+	struct peripheral *peripheral = data;
+	uint8_t buf[4096];
+	ssize_t n;
+
+	n = read(fd, buf, sizeof(buf));
+	if (n < 0) {
+		if (errno != EAGAIN) {
+			warn("failed to read from cntl channel");
+			peripheral_close(peripheral);
+		}
+		return 0;
+	}
+
+	return diag_cntl_recv(peripheral, buf, n);
+}
+
 static void peripheral_open(void *data)
 {
 	struct peripheral *peripheral = data;
@@ -274,7 +292,7 @@ static void peripheral_open(void *data)
 
 	watch_add_writeq(peripheral->cntl_fd, &peripheral->cntlq);
 	watch_add_writeq(peripheral->data_fd, &peripheral->dataq);
-	watch_add_readfd(peripheral->cntl_fd, diag_cntl_recv, peripheral);
+	watch_add_readfd(peripheral->cntl_fd, rpmsg_perif_cntl_recv, peripheral);
 	watch_add_readfd(peripheral->data_fd, diag_data_recv, peripheral);
 	if (peripheral->cmd_fd >= 0) {
 		watch_add_readfd(peripheral->cmd_fd, diag_cmd_recv, peripheral);
