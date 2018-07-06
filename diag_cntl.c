@@ -91,6 +91,36 @@ struct diag_cntl_cmd_reg {
 } __packed;
 #define to_cmd_reg(h) container_of(h, struct diag_cntl_cmd_reg, hdr)
 
+#define DIAG_CNTL_CMD_DIAG_MODE 3
+struct diag_cntl_cmd_diag_mode
+{
+	struct diag_cntl_hdr hdr;
+	uint32_t version;
+	uint32_t sleep_vote;
+	uint32_t real_time;
+	uint32_t use_nrt_values;
+	uint32_t commit_threshold;
+	uint32_t sleep_threshold;
+	uint32_t sleep_time;
+	uint32_t drain_timer_val;
+	uint32_t event_stale_time_val;
+} __packed;
+
+struct diag_cntl_cmd_diag_mode_v2
+{
+	struct diag_cntl_hdr hdr;
+	uint32_t version;
+	uint32_t sleep_vote;
+	uint32_t real_time;
+	uint32_t use_nrt_values;
+	uint32_t commit_threshold;
+	uint32_t sleep_threshold;
+	uint32_t sleep_time;
+	uint32_t drain_timer_val;
+	uint32_t event_stale_time_val;
+	uint8_t diag_id;
+} __packed;
+
 #define DIAG_CNTL_CMD_FEATURE_MASK 8
 struct diag_cntl_cmd_feature {
 	struct diag_cntl_hdr hdr;
@@ -435,6 +465,43 @@ static void diag_cntl_send_feature_mask(struct peripheral *peripheral, uint32_t 
 	pkt->mask = mask;
 
 	queue_push(&peripheral->cntlq, pkt, len);
+}
+
+void diag_cntl_set_diag_mode(struct peripheral *perif, bool real_time)
+{
+	struct diag_cntl_cmd_diag_mode_v2 pkt_v2;
+	struct diag_cntl_cmd_diag_mode pkt;
+
+	if (perif->diag_id) {
+		pkt_v2.hdr.cmd = DIAG_CNTL_CMD_DIAG_MODE;
+		pkt_v2.hdr.len = 37;
+		pkt_v2.version = 2;
+		pkt_v2.sleep_vote = real_time;
+		pkt_v2.real_time = real_time;
+		pkt_v2.use_nrt_values = 0;
+		pkt_v2.commit_threshold = 0;
+		pkt_v2.sleep_threshold = 0;
+		pkt_v2.sleep_time = 0;
+		pkt_v2.drain_timer_val = 0;
+		pkt_v2.event_stale_time_val = 0;
+		pkt_v2.diag_id = perif->diag_id;
+
+		queue_push(&perif->cntlq, &pkt_v2, sizeof(pkt_v2));
+	} else {
+		pkt.hdr.cmd = DIAG_CNTL_CMD_DIAG_MODE;
+		pkt.hdr.len = 36;
+		pkt.version = 1;
+		pkt.sleep_vote = real_time;
+		pkt.real_time = real_time;
+		pkt.use_nrt_values = 0;
+		pkt.commit_threshold = 0;
+		pkt.sleep_threshold = 0;
+		pkt.sleep_time = 0;
+		pkt.drain_timer_val = 0;
+		pkt.event_stale_time_val = 0;
+
+		queue_push(&perif->cntlq, &pkt, sizeof(pkt));
+	}
 }
 
 int diag_cntl_recv(struct peripheral *peripheral, const void *buf, size_t n)
