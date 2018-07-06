@@ -132,7 +132,9 @@ int main(int argc, char **argv)
 		if (ret < 0)
 			errx(1, "failed to open usb\n");
 	} else {
-		errx(1, "no configured connection mode\n");
+		ret = diag_unix_open();
+		if (ret < 0)
+			errx(1, "failed to create unix socket dm\n");
 	}
 
 	peripheral_init();

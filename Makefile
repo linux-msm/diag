@@ -21,6 +21,7 @@ SRCS := app_cmds.c \
 	router.c \
 	socket.c \
 	uart.c \
+	unix.c \
 	usb.c \
 	util.c \
 	watch.c
