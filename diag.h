@@ -75,8 +75,11 @@ struct peripheral {
 	struct list_head dataq;
 
 	int cntl_fd;
+	bool cntl_open;
 	int data_fd;
+	bool data_open;
 	int cmd_fd;
+	int dci_cmd_fd;
 
 	int diag_id;
 

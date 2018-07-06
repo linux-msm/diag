@@ -1,4 +1,5 @@
-HAVE_LIBUDEV=1
+HAVE_LIBUDEV=0
+HAVE_LIBQRTR=0
 
 .PHONY: all
 
@@ -11,6 +12,10 @@ CFLAGS := -Wall -g -O2
 ifeq ($(HAVE_LIBUDEV),1)
 CFLAGS += -DHAS_LIBUDEV=1
 LDFLAGS += -ludev
+endif
+ifeq ($(HAVE_LIBQRTR),1)
+CFLAGS += -DHAS_LIBQRTR=1
+LDFLAGS += -lqrtr
 endif
 
 SRCS := app_cmds.c \
@@ -33,6 +38,10 @@ SRCS := app_cmds.c \
 
 ifeq ($(HAVE_LIBUDEV),1)
 SRCS += peripheral-rpmsg.c
+endif
+
+ifeq ($(HAVE_LIBQRTR),1)
+SRCS += peripheral-qrtr.c
 endif
 
 OBJS := $(SRCS:.c=.o)

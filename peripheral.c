@@ -44,6 +44,7 @@
 #include "hdlc.h"
 #include "list.h"
 #include "peripheral.h"
+#include "peripheral-qrtr.h"
 #include "peripheral-rpmsg.h"
 #include "util.h"
 #include "watch.h"
@@ -63,6 +64,7 @@ void peripheral_close(struct peripheral *peripheral)
 int peripheral_init(void)
 {
 	peripheral_rpmsg_init();
+	peripheral_qrtr_init();
 
 	return 0;
 }
