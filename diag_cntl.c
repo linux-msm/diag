@@ -95,7 +95,7 @@ struct diag_cntl_cmd_reg {
 struct diag_cntl_cmd_feature {
 	struct diag_cntl_hdr hdr;
 	uint32_t mask_len;
-	uint8_t mask[];
+	uint32_t mask;
 } __packed;
 #define to_cmd_feature(h) container_of(h, struct diag_cntl_cmd_feature, hdr)
 
@@ -198,11 +198,7 @@ static int diag_cntl_feature_mask(struct peripheral *peripheral,
 				  struct diag_cntl_hdr *hdr, size_t len)
 {
 	struct diag_cntl_cmd_feature *pkt = to_cmd_feature(hdr);
-	uint32_t mask = 0;
-	int i;
-
-	for (i = 0; i < pkt->mask_len && i < sizeof(mask); i++)
-		mask |= pkt->mask[i] << (8 * i);
+	uint32_t mask = pkt->mask;
 
 	printf("[%s] mask:", peripheral->name);
 
@@ -428,9 +424,8 @@ void diag_cntl_send_feature_mask(struct peripheral *peripheral)
 
 	pkt->hdr.cmd = DIAG_CNTL_CMD_FEATURE_MASK;
 	pkt->hdr.len = len - sizeof(struct diag_cntl_hdr);
-	pkt->mask_len = 2;
-	pkt->mask[0] = (mask >> 8) & 0xff;
-	pkt->mask[1] = (mask >> 0) & 0xff;
+	pkt->mask_len = sizeof(pkt->mask);
+	pkt->mask = mask;
 
 	queue_push(&peripheral->cntlq, pkt, len);
 }
