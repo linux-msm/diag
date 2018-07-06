@@ -153,6 +153,8 @@ struct diag_cntl_cmd_dereg {
 } __packed;
 #define to_cmd_dereg(h) container_of(h, struct diag_cntl_cmd_dereg, hdr)
 
+static void diag_cntl_send_feature_mask(struct peripheral *peripheral, uint32_t mask);
+
 static int diag_cntl_register(struct peripheral *peripheral,
 			      struct diag_cntl_hdr *hdr, size_t len)
 {
@@ -198,7 +200,13 @@ static int diag_cntl_feature_mask(struct peripheral *peripheral,
 				  struct diag_cntl_hdr *hdr, size_t len)
 {
 	struct diag_cntl_cmd_feature *pkt = to_cmd_feature(hdr);
+	uint32_t local_mask = 0;
 	uint32_t mask = pkt->mask;
+
+	local_mask |= DIAG_FEATURE_FEATURE_MASK_SUPPORT;
+	local_mask |= DIAG_FEATURE_DIAG_MASTER_SETS_COMMON_MASK;
+	local_mask |= DIAG_FEATURE_REQ_RSP_SUPPORT;
+	local_mask |= DIAG_FEATURE_APPS_HDLC_ENCODE;
 
 	printf("[%s] mask:", peripheral->name);
 
@@ -225,9 +233,9 @@ static int diag_cntl_feature_mask(struct peripheral *peripheral,
 
 	printf(" (0x%x)\n", mask);
 
-	peripheral->features = mask;
+	peripheral->features = mask & local_mask;
 
-	diag_cntl_send_feature_mask(peripheral);
+	diag_cntl_send_feature_mask(peripheral, peripheral->features);
 
 	return 0;
 }
@@ -405,20 +413,15 @@ static int diag_cntl_deregister(struct peripheral *peripheral,
 	return 0;
 }
 
-void diag_cntl_send_feature_mask(struct peripheral *peripheral)
+static void diag_cntl_send_feature_mask(struct peripheral *peripheral, uint32_t mask)
 {
 	struct diag_cntl_cmd_feature *pkt;
 	size_t len = sizeof(*pkt) + 2;
-	uint32_t mask = 0;
 
 	if (peripheral->cntl_fd == -1) {
 		warn("Peripheral %s has no control channel. Skipping!\n", peripheral->name);
 		return;
 	}
-
-	mask = DIAG_FEATURE_FEATURE_MASK_SUPPORT | 
-	       DIAG_FEATURE_DIAG_MASTER_SETS_COMMON_MASK | 
-	       DIAG_FEATURE_APPS_HDLC_ENCODE ;
 
 	pkt = alloca(len);
 

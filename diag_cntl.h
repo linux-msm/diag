@@ -36,7 +36,6 @@
 #include "masks.h"
 
 int diag_cntl_recv(struct peripheral *perif, const void *buf, size_t len);
-void diag_cntl_send_feature_mask(struct peripheral *peripheral);
 void diag_cntl_send_log_mask(struct peripheral *peripheral, uint32_t equip_id);
 void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_range_t *range);
 void diag_cntl_send_event_mask(struct peripheral *peripheral);
