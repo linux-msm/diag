@@ -76,6 +76,7 @@ void dm_add(const char *name, int in_fd, int out_fd, bool hdlc_encoded)
 	dm->in_fd = in_fd;
 	dm->out_fd = out_fd;
 	dm->hdlc_encoded = hdlc_encoded;
+	list_init(&dm->outq);
 
 	watch_add_readfd(dm->in_fd, dm_recv, dm);
 	watch_add_writeq(dm->out_fd, &dm->outq);

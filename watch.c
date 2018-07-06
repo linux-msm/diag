@@ -94,8 +94,6 @@ int watch_add_writeq(int fd, struct list_head *queue)
 	if (!w)
 		err(1, "calloc");
 
-	list_init(queue);
-
 	w->fd = fd;
 	w->queue = queue;
 

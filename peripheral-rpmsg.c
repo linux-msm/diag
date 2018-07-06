@@ -322,6 +322,9 @@ static int peripheral_create(const char *name)
 	peripheral->cmd_fd = -1;
 	peripheral->send = perif_rpmsg_send;
 	peripheral->close = perif_rpmsg_close;
+	list_init(&peripheral->cmdq);
+	list_init(&peripheral->cntlq);
+	list_init(&peripheral->dataq);
 	list_add(&peripherals, &peripheral->node);
 
 	watch_add_timer(peripheral_open, peripheral, 1000, false);
