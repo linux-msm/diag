@@ -75,6 +75,8 @@ struct peripheral {
 	int data_fd;
 	int cmd_fd;
 
+	bool sockets;
+
 	struct circ_buf recv_buf;
 	struct hdlc_decoder recv_decoder;
 
