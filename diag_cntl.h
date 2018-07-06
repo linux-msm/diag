@@ -44,5 +44,6 @@ void diag_cntl_close(struct peripheral *peripheral);
 void diag_cntl_send_masks(struct peripheral *peripheral);
 
 void diag_cntl_set_diag_mode(struct peripheral *perif, bool real_time);
+void diag_cntl_set_buffering_mode(struct peripheral *perif, int mode);
 
 #endif

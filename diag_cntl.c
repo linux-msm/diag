@@ -172,6 +172,28 @@ struct cmd_range_dereg {
 	uint16_t last;
 };
 
+#define DIAG_CNTL_CMD_BUFFERING_TX_MODE	17
+struct diag_cntl_cmd_buffering_tx_mode
+{
+	struct diag_cntl_hdr hdr;
+	uint32_t version;
+	uint8_t stream_id;
+	uint8_t tx_mode;
+} __packed;
+
+struct diag_cntl_cmd_buffering_tx_mode_v2
+{
+	struct diag_cntl_hdr hdr;
+	uint32_t version;
+	uint8_t diag_id;
+	uint8_t stream_id;
+	uint8_t tx_mode;
+} __packed;
+
+#define DIAG_BUFFERING_MODE_STREAMING   0
+#define DIAG_BUFFERING_MODE_THRESHOLD   1
+#define DIAG_BUFFERING_MODE_CIRCULAR    2
+
 #define DIAG_CNTL_CMD_DEREGISTER	27
 struct diag_cntl_cmd_dereg {
 	struct diag_cntl_hdr hdr;
@@ -499,6 +521,31 @@ void diag_cntl_set_diag_mode(struct peripheral *perif, bool real_time)
 		pkt.sleep_time = 0;
 		pkt.drain_timer_val = 0;
 		pkt.event_stale_time_val = 0;
+
+		queue_push(&perif->cntlq, &pkt, sizeof(pkt));
+	}
+}
+
+void diag_cntl_set_buffering_mode(struct peripheral *perif, int mode)
+{
+	struct diag_cntl_cmd_buffering_tx_mode_v2 pkt_v2;
+	struct diag_cntl_cmd_buffering_tx_mode pkt;
+
+	if (perif->diag_id) {
+		pkt_v2.hdr.cmd = DIAG_CNTL_CMD_BUFFERING_TX_MODE;
+		pkt_v2.hdr.len = 7;
+		pkt_v2.version = 2;
+		pkt_v2.diag_id = perif->diag_id;
+		pkt_v2.stream_id = 0;
+		pkt_v2.tx_mode = mode;
+
+		queue_push(&perif->cntlq, &pkt_v2, sizeof(pkt_v2));
+	} else {
+		pkt.hdr.cmd = DIAG_CNTL_CMD_BUFFERING_TX_MODE;
+		pkt.hdr.len = 6;
+		pkt.version = 1;
+		pkt.stream_id = 0;
+		pkt.tx_mode = mode;
 
 		queue_push(&perif->cntlq, &pkt, sizeof(pkt));
 	}
