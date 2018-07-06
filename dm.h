@@ -36,7 +36,7 @@
 
 struct diag_client;
 
-void dm_add(const char *name, int in_fd, int out_fd);
+void dm_add(const char *name, int in_fd, int out_fd, bool hdlc_encoded);
 int dm_recv(int fd, void* data);
 ssize_t dm_send(struct diag_client *dm, const void *ptr, size_t len);
 void dm_broadcast(const void *ptr, size_t len);

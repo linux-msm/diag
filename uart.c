@@ -105,7 +105,7 @@ int diag_uart_open(const char *uartname, unsigned int baudrate)
 
 	printf("Connected to %s@%d\n", uartname, baudrate);
 
-	dm_add("UART client", fd, fd);
+	dm_add("UART client", fd, fd, true);
 
 	return fd;
 }

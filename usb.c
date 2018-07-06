@@ -379,7 +379,7 @@ int diag_usb_open(const char *usbname, const char *serial)
 
 	printf("Connected to %s %s\n", g_usb_config.dev_name, g_usb_config.serial);
 
-	dm_add("USB client", handle->bulk_in, handle->bulk_out);
+	dm_add("USB client", handle->bulk_in, handle->bulk_out, true);
 
 	return handle->control;
 }

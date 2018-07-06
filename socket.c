@@ -80,7 +80,7 @@ int diag_sock_connect(const char *hostname, unsigned short port)
 
 	printf("Connected to %s:%d\n", hostname, port);
 
-	dm_add("DIAG CLIENT", fd, fd);
+	dm_add("DIAG CLIENT", fd, fd, true);
 
 	return fd;
 }
