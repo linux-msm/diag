@@ -246,6 +246,7 @@ void watch_run(void)
 	int nfds;
 	int ret;
 	struct list_head *item;
+	struct list_head *next;
 
 	while (!do_watch_quit) {
 		FD_ZERO(&rfds);
@@ -295,14 +296,12 @@ void watch_run(void)
 				watch_free_timer(timer);
 		}
 
-		list_for_each(item, &read_watches) {
+		list_for_each_safe(item, next, &read_watches) {
 			w = container_of(item, struct watch, node);
 			if (FD_ISSET(w->fd, &rfds)) {
 				ret = w->cb(w->fd, w->data);
-				if (ret < 0) {
-					do_watch_quit = true;
-					break;
-				}
+				if (ret < 0)
+					list_del(&w->node);
 			}
 		}
 
