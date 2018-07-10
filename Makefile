@@ -3,7 +3,7 @@ HAVE_LIBQRTR=0
 
 .PHONY: all
 
-DIAG := diag
+DIAG := diag-router
 SEND_DATA := send_data
 
 all: $(DIAG) $(SEND_DATA)
@@ -18,30 +18,30 @@ CFLAGS += -DHAS_LIBQRTR=1
 LDFLAGS += -lqrtr
 endif
 
-SRCS := app_cmds.c \
-	circ_buf.c \
-	common_cmds.c \
-	diag.c \
-	diag_cntl.c \
-	dm.c \
-	hdlc.c \
-	masks.c \
-	mbuf.c \
-	peripheral.c \
-	router.c \
-	socket.c \
-	uart.c \
-	unix.c \
-	usb.c \
-	util.c \
-	watch.c
+SRCS := router/app_cmds.c \
+	router/circ_buf.c \
+	router/common_cmds.c \
+	router/diag.c \
+	router/diag_cntl.c \
+	router/dm.c \
+	router/hdlc.c \
+	router/masks.c \
+	router/mbuf.c \
+	router/peripheral.c \
+	router/router.c \
+	router/socket.c \
+	router/uart.c \
+	router/unix.c \
+	router/usb.c \
+	router/util.c \
+	router/watch.c
 
 ifeq ($(HAVE_LIBUDEV),1)
-SRCS += peripheral-rpmsg.c
+SRCS += router/peripheral-rpmsg.c
 endif
 
 ifeq ($(HAVE_LIBQRTR),1)
-SRCS += peripheral-qrtr.c
+SRCS += router/peripheral-qrtr.c
 endif
 
 OBJS := $(SRCS:.c=.o)
@@ -49,7 +49,7 @@ OBJS := $(SRCS:.c=.o)
 $(DIAG): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-SEND_DATA_SRCS := send_data.c
+SEND_DATA_SRCS := tools/send_data.c
 SEND_DATA_OBJS := $(SEND_DATA_SRCS:.c=.o)
 
 $(SEND_DATA): $(SEND_DATA_OBJS)
