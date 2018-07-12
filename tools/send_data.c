@@ -43,6 +43,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define DIAG_CMD_RSP_BAD_COMMAND			0x13
+#define DIAG_CMD_RSP_BAD_PARAMS				0x14
+#define DIAG_CMD_RSP_BAD_LENGTH				0x15
+
 int main(int argc, char **argv)
 {
 	struct sockaddr_un addr;
@@ -72,8 +76,10 @@ int main(int argc, char **argv)
 	if (ret < 0)
 		err(1, "failed to connect to diag");
 
-	write(fd, msg, argc - 1);
-		
+	n = write(fd, msg, argc - 1);
+	if (n < 0)
+		err(1, "failed to send request");
+
 	for (;;) {
 		FD_ZERO(&rfds);
 		FD_SET(fd, &rfds);
@@ -95,6 +101,11 @@ int main(int argc, char **argv)
 			fprintf(stderr, "failed to read response: %s\n",
 				strerror(errno));
 			exit(1);
+		}
+
+		if (buf[0] == DIAG_CMD_RSP_BAD_COMMAND) {
+			printf("Diag response: Bad command\n");
+			break;
 		}
 
 		for (i = 0; i < n; i++) {
