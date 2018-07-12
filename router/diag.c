@@ -88,9 +88,6 @@ int main(int argc, char **argv)
 	int ret;
 	int c;
 
-	if (argc == 1)
-		usage();
-
 	for (;;) {
 		c = getopt(argc, argv, "hs:u:g:");
 		if (c < 0)
