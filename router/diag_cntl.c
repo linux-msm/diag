@@ -257,7 +257,8 @@ static int diag_cntl_feature_mask(struct peripheral *peripheral,
 
 	local_mask |= DIAG_FEATURE_FEATURE_MASK_SUPPORT;
 	local_mask |= DIAG_FEATURE_DIAG_MASTER_SETS_COMMON_MASK;
-	local_mask |= DIAG_FEATURE_REQ_RSP_SUPPORT;
+	if (peripheral->cmd_fd >= 0)
+		local_mask |= DIAG_FEATURE_REQ_RSP_SUPPORT;
 	local_mask |= DIAG_FEATURE_APPS_HDLC_ENCODE;
 	if (peripheral->sockets)
 		local_mask |= DIAG_FEATURE_SOCKETS_ENABLED;
