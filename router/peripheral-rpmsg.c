@@ -266,7 +266,7 @@ static void peripheral_open(void *data)
 	if (fd < 0)
 		fd = devnode_open(rproc, "APPS_RIVA_DATA");
 	if (fd < 0) {
-		warn("unable to open DIAG channel\n");
+		warn("unable to open DIAG channel");
 		return;
 	}
 	peripheral->data_fd = fd;
@@ -275,7 +275,7 @@ static void peripheral_open(void *data)
 	if (fd < 0)
 		fd = devnode_open(rproc, "APPS_RIVA_CTRL");
 	if (fd < 0) {
-		warn("unable to find DIAG_CNTL channel\n");
+		warn("unable to find DIAG_CNTL channel");
 		close(peripheral->data_fd);
 		peripheral->data_fd = -1;
 		return;
