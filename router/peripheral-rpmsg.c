@@ -66,19 +66,45 @@ struct devnode {
 
 struct list_head devnodes = LIST_INIT(devnodes);
 
+struct non_hdlc_pkt {
+	uint8_t start;
+	uint8_t version;
+	uint16_t length;
+	char payload[];
+};
+
 static int diag_cmd_recv(int fd, void *data)
 {
 	struct peripheral *peripheral = data;
+	struct non_hdlc_pkt *frame;
 	uint8_t buf[APPS_BUF_SIZE];
-	ssize_t n;
+	ssize_t len;
 
-	n = read(fd, buf, sizeof(buf));
-	if (n < 0) {
+	len = read(fd, buf, sizeof(buf));
+	if (len < 0) {
 		if (errno != EAGAIN) {
 			warn("failed to read from cmd channel");
 			peripheral_close(peripheral);
 		}
 	}
+
+	frame = (struct non_hdlc_pkt *)buf;
+	if (frame->start != 0x7e || frame->version != 1) {
+		fprintf(stderr, "invalid non-HDLC frame\n");
+		return 0;
+	}
+
+	if (sizeof(*frame) + frame->length + 1 > len) {
+		fprintf(stderr, "truncated non-HDLC frame\n");
+		return 0;
+	}
+
+	if (frame->payload[frame->length] != 0x7e) {
+		fprintf(stderr, "non-HDLC frame is not truncated\n");
+		return 0;
+	}
+
+	dm_broadcast(frame->payload, frame->length);
 
 	return 0;
 }
@@ -144,10 +170,17 @@ static int diag_data_recv(int fd, void *data)
 
 static int perif_rpmsg_send(struct peripheral *peripheral, const void *ptr, size_t len)
 {
-	if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
-		queue_push(&peripheral->dataq, ptr, len);
+	struct list_head *queue;
+
+	if (peripheral->features & DIAG_FEATURE_REQ_RSP_SUPPORT)
+		queue = &peripheral->cmdq;
 	else
-		hdlc_enqueue(&peripheral->dataq, ptr, len);
+		queue = &peripheral->dataq;
+
+	if (peripheral->features & DIAG_FEATURE_APPS_HDLC_ENCODE)
+		queue_push(queue, ptr, len);
+	else
+		hdlc_enqueue(queue, ptr, len);
 
 	return 0;
 }
