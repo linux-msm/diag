@@ -353,21 +353,25 @@ static void perif_rpmsg_close(struct peripheral *peripheral)
 	free(peripheral);
 }
 
-static int peripheral_create(const char *name)
+static int peripheral_create(const char *rproc, const char *channel)
 {
 	struct peripheral *peripheral;
 	struct list_head *item;
 
+	/* Only trigger the creation of a peripheral on primary channels */
+	if (strcmp(channel, "DIAG") && strcmp(channel, "APPS_RIVA_DATA"))
+		return 0;
+
 	list_for_each(item, &peripherals) {
 		peripheral = container_of(item, struct peripheral, node);
-		if (strcmp(peripheral->name, name) == 0)
+		if (strcmp(peripheral->name, rproc) == 0)
 			return 0;
 	}
 
 	peripheral = malloc(sizeof(*peripheral));
 	memset(peripheral, 0, sizeof(*peripheral));
 
-	peripheral->name = strdup(name);
+	peripheral->name = strdup(rproc);
 	peripheral->data_fd = -1;
 	peripheral->cntl_fd = -1;
 	peripheral->cmd_fd = -1;
@@ -411,7 +415,7 @@ static int peripheral_udev_update(int fd, void *data)
 
 		devnode_add(devnode, name, rproc);
 
-		peripheral_create(rproc);
+		peripheral_create(rproc, name);
 	} else if (strcmp(action, "remove") == 0) {
 		devnode_remove(devnode);
 	} else {
@@ -463,7 +467,7 @@ int peripheral_rpmsg_init(void)
 
 		if (devnode && name && rproc) {
 			devnode_add(devnode, name, rproc);
-			peripheral_create(rproc);
+			peripheral_create(rproc, name);
 		}
 
 		udev_device_unref(dev);
