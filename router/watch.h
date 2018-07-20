@@ -34,7 +34,11 @@
 #include <stdbool.h>
 #include "list.h"
 
+struct mbuf;
+
 int watch_add_readfd(int fd, int (*cb)(int, void*), void *data);
+int watch_add_readq(int fd, struct list_head *queue,
+		    int (*cb)(struct mbuf *mbuf, void *data), void *data);
 int watch_add_writeq(int fd, struct list_head *queue);
 void watch_remove_fd(int fd);
 int watch_add_quit(int (*cb)(int, void*), void *data);

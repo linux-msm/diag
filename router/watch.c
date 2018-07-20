@@ -28,13 +28,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <sys/eventfd.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 
+#include <linux/aio_abi.h>
+
+#include <assert.h>
 #include <err.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "list.h"
@@ -47,6 +54,13 @@ struct watch {
 	int (*cb)(int, void*);
 	void *data;
 	struct list_head *queue;
+
+	struct iocb iocb;
+	struct mbuf *pending_aio;
+
+	bool is_write;
+
+	int (*aio_complete)(struct mbuf *, void*);
 
 	struct list_head node;
 };
@@ -65,9 +79,32 @@ struct timer {
 static struct list_head timers = LIST_INIT(timers);
 
 static struct list_head read_watches = LIST_INIT(read_watches);
-static struct list_head write_watches = LIST_INIT(write_watches);
+static struct list_head aio_watches = LIST_INIT(aio_watches);
 static struct list_head quit_watches = LIST_INIT(quit_watches);
 static bool do_watch_quit;
+
+typedef unsigned long aio_context_t;
+
+static long io_destroy(aio_context_t ctx)
+{
+	return syscall(__NR_io_destroy, ctx);
+}
+
+static long io_getevents(aio_context_t ctx, long min_nr, long nr,
+			 struct io_event *events, struct timespec *tmo)
+{
+	return syscall(__NR_io_getevents, ctx, min_nr, nr, events, tmo);
+}
+
+static long io_setup(unsigned nr_reqs, aio_context_t *ctx)
+{
+	return syscall(__NR_io_setup, nr_reqs, ctx);
+}
+
+static long io_submit(aio_context_t ctx, long n, struct iocb **paiocb)
+{
+	return syscall(__NR_io_submit, ctx, n, paiocb);
+}
 
 int watch_add_readfd(int fd, int (*cb)(int, void*), void *data)
 {
@@ -86,6 +123,34 @@ int watch_add_readfd(int fd, int (*cb)(int, void*), void *data)
 	return 0;
 }
 
+int watch_add_readq(int fd, struct list_head *queue,
+		    int (*cb)(struct mbuf *mbuf, void *data), void *data)
+{
+	struct watch *w;
+
+	w = calloc(1, sizeof(*w));
+	if (!w)
+		err(1, "calloc");
+
+	w->fd = fd;
+	w->aio_complete = cb;
+	w->data = data;
+	w->queue = queue;
+
+	w->is_write = false;
+
+	list_add(&aio_watches, &w->node);
+
+	return 0;
+}
+
+static int watch_free_write_aio(struct mbuf *mbuf, void *data)
+{
+	free(mbuf);
+
+	return 0;
+}
+
 int watch_add_writeq(int fd, struct list_head *queue)
 {
 	struct watch *w;
@@ -96,8 +161,13 @@ int watch_add_writeq(int fd, struct list_head *queue)
 
 	w->fd = fd;
 	w->queue = queue;
+	w->data = w;
 
-	list_add(&write_watches, &w->node);
+	w->aio_complete = watch_free_write_aio;
+
+	w->is_write = true;
+
+	list_add(&aio_watches, &w->node);
 
 	return 0;
 }
@@ -116,7 +186,7 @@ void watch_remove_fd(int fd)
 		}
 	}
 
-	list_for_each_safe(item, next, &write_watches) {
+	list_for_each_safe(item, next, &aio_watches) {
 		w = container_of(item, struct watch, node);
 		if (w->fd == fd) {
 			list_del(&w->node);
@@ -186,7 +256,6 @@ static void watch_free_timer(struct timer *timer)
 
 static struct timer *watch_get_next_timer()
 {
-	struct list_head *pos;
 	struct timeval tv;
 	struct timer *selected;
 	struct timer *timer;
@@ -197,9 +266,7 @@ static struct timer *watch_get_next_timer()
 	selected = container_of(timers.next, struct timer, node);
 	tv = selected->tick;
 
-	list_for_each(pos, &timers) {
-		timer = container_of(pos, struct timer, node);
-
+	list_for_each_entry(timer, &timers, node) {
 		if (timercmp(&timer->tick, &tv, <)) {
 			selected = timer;
 			tv = timer->tick;
@@ -214,24 +281,71 @@ void watch_quit(void)
 	do_watch_quit = true;
 }
 
-static void handle_write(struct watch *w)
+static void watch_submit_aio(aio_context_t ioctx, int evfd, struct watch *w)
 {
-	struct list_head *item;
-	struct list_head *next;
+	struct iocb *iocb = &w->iocb;
 	struct mbuf *mbuf;
-	ssize_t n;
+	int ret;
 
-	for (item = w->queue->next; item != w->queue; item = next) {
-		next = item->next;
+	assert(!w->pending_aio);
 
-		mbuf = container_of(item, struct mbuf, node);
+	if (list_empty(w->queue))
+		return;
 
-		n = write(w->fd, mbuf->data, mbuf->size);
-		if (n < 0)
-			break;
+	mbuf = list_entry_first(w->queue, struct mbuf, node);
 
+	memset(iocb, 0, sizeof(*iocb));
+	iocb->aio_fildes = w->fd;
+	iocb->aio_lio_opcode = w->is_write ? IOCB_CMD_PWRITE : IOCB_CMD_PREAD;
+	iocb->aio_buf = (uint64_t)mbuf->data;
+	iocb->aio_nbytes = mbuf->size;
+	iocb->aio_offset = 0;
+	iocb->aio_flags = IOCB_FLAG_RESFD;
+	iocb->aio_resfd = evfd;
+
+	ret = io_submit(ioctx, 1, &iocb);
+	if (ret != 1)
+		fprintf(stderr, "io_submit failed: %d (%d)\n", ret, errno);
+
+	if (ret == 1) {
 		list_del(&mbuf->node);
-		free(mbuf);
+		w->pending_aio = mbuf;
+	}
+}
+
+static void watch_handle_eventfd(int evfd, aio_context_t ioctx)
+{
+	struct io_event ev[32];
+	struct iocb *iocb;
+	struct watch *next;
+	struct watch *w;
+	uint64_t evcnt;
+	ssize_t n;
+	int count;
+	int i;
+
+	n = read(evfd, &evcnt, sizeof(evcnt));
+	if (n < 0) {
+		warn("failed to read eventfd counter");
+		return;
+	}
+
+	count = io_getevents(ioctx, 1, 32, ev, NULL);
+	list_for_each_entry_safe(w, next, &aio_watches, node) {
+		for (i = 0; i < count; i++) {
+			iocb = (struct iocb *)ev[i].obj;
+			if (iocb->aio_fildes == w->fd) {
+				assert(w->pending_aio);
+
+				if (!w->is_write)
+					w->pending_aio->offset = ev[i].res;
+
+				w->aio_complete(w->pending_aio, w->data);
+				w->pending_aio = NULL;
+
+				// watch_submit_aio(ioctx, evfd, w);
+			}
+		}
 	}
 }
 
@@ -240,33 +354,38 @@ void watch_run(void)
 	struct timer *timer;
 	struct timeval now;
 	struct timeval tv;
+	aio_context_t ioctx = 0;
+	struct watch *next;
 	struct watch *w;
 	fd_set rfds;
-	fd_set wfds;
+	int evfd;
 	int nfds;
 	int ret;
-	struct list_head *item;
-	struct list_head *next;
+
+	evfd = eventfd(0, 0);
+	if (evfd < 0)
+		err(1, "failed to create eventfd");
+
+	ret = io_setup(32, &ioctx);
+	if (ret < 0)
+		err(1, "failed to initialize aio context");
 
 	while (!do_watch_quit) {
 		FD_ZERO(&rfds);
-		FD_ZERO(&wfds);
-		nfds = 0;
+		FD_SET(evfd, &rfds);
 
-		list_for_each(item, &read_watches) {
-			w = container_of(item, struct watch, node);
+		nfds = evfd + 1;
+
+		list_for_each_entry(w, &read_watches, node) {
 			FD_SET(w->fd, &rfds);
 
 			nfds = MAX(w->fd + 1, nfds);
 		}
 
-		list_for_each(item, &write_watches) {
-			w = container_of(item, struct watch, node);
-			if (!list_empty(w->queue)) {
-				FD_SET(w->fd, &wfds);
-
-				nfds = MAX(w->fd + 1, nfds);
-			}
+		list_for_each_entry(w, &aio_watches, node) {
+			/* Submit AIO if none is pending */
+			if (!list_empty(w->queue) && !w->pending_aio)
+				watch_submit_aio(ioctx, evfd, w);
 		}
 
 		timer = watch_get_next_timer();
@@ -281,7 +400,7 @@ void watch_run(void)
 			tv.tv_usec = 0;
 		}
 
-		ret = select(nfds, &rfds, &wfds, NULL, &tv);
+		ret = select(nfds, &rfds, NULL, NULL, &tv);
 		if (ret < 0) {
 			warn("failed to select");
 			break;
@@ -296,24 +415,20 @@ void watch_run(void)
 				watch_free_timer(timer);
 		}
 
-		list_for_each_safe(item, next, &read_watches) {
-			w = container_of(item, struct watch, node);
+		if (FD_ISSET(evfd, &rfds))
+			watch_handle_eventfd(evfd, ioctx);
+
+		list_for_each_entry_safe(w, next, &read_watches, node) {
 			if (FD_ISSET(w->fd, &rfds)) {
 				ret = w->cb(w->fd, w->data);
 				if (ret < 0)
 					list_del(&w->node);
 			}
 		}
-
-		list_for_each(item, &write_watches) {
-			w = container_of(item, struct watch, node);
-			if (FD_ISSET(w->fd, &wfds))
-				handle_write(w);
-		}
 	}
 
-	list_for_each(item, &quit_watches) {
-		w = container_of(item, struct watch, node);
+	list_for_each_entry(w, &quit_watches, node)
 		w->cb(-1, w->data);
-	}
+
+	io_destroy(ioctx);
 }
