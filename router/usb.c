@@ -218,7 +218,7 @@ struct usb_handle {
 static int ffs_diag_init(const char *ffs_name, struct usb_handle *h)
 {
 	struct desc_v2 desc;
-	int ffs_fd = -1;
+	int ffs_fd;
 	ssize_t n;
 	int ret;
 
@@ -235,14 +235,14 @@ static int ffs_diag_init(const char *ffs_name, struct usb_handle *h)
 	ret = open(ffs_name, O_DIRECTORY);
 	if (ret < 0) {
 		warn("cannot open device folder %s", ffs_name);
-		goto err;
+		goto err_out;
 	}
 	ffs_fd = ret;
 
 	ret = openat(ffs_fd, USB_FFS_EP0_NAME, O_RDWR);
 	if (ret < 0) {
 		warn("cannot open control endpoint");
-		goto err;
+		goto err_close_ffs;
 	}
 	h->ep0 = ret;
 
@@ -250,27 +250,27 @@ static int ffs_diag_init(const char *ffs_name, struct usb_handle *h)
 	if (n < 0) {
 		warn("failed to write descriptors");
 		ret = n;
-		goto err;
+		goto err_close_ep0;
 	}
 
 	n = write(h->ep0, &strings, sizeof(strings));
 	if (n < 0) {
 		warn("failed to write strings");
 		ret = n;
-		goto err;
+		goto err_close_ep0;
 	}
 
 	ret = openat(ffs_fd, USB_FFS_OUT_NAME, O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if (ret < 0) {
 		warn("cannot open bulk-out ep");
-		goto err;
+		goto err_close_ep0;
 	}
 	h->bulk_out = ret;
 
 	ret = openat(ffs_fd, USB_FFS_IN_NAME, O_RDWR);
 	if (ret < 0) {
 		warn("cannot open bulk-in ep");
-		goto err;
+		goto err_close_bulk_out;
 	}
 	h->bulk_in = ret;
 
@@ -278,19 +278,13 @@ static int ffs_diag_init(const char *ffs_name, struct usb_handle *h)
 
 	return 0;
 
-err:
-	if (ffs_fd > 0)
-		close(ffs_fd);
-
-	if (h->bulk_in > 0)
-		close(h->bulk_in);
-
-	if (h->bulk_out > 0)
-		close(h->bulk_out);
-
-	if (h->ep0 > 0)
-		close(h->ep0);
-
+err_close_bulk_out:
+	close(h->bulk_out);
+err_close_ep0:
+	close(h->ep0);
+err_close_ffs:
+	close(ffs_fd);
+err_out:
 	return ret;
 }
 
