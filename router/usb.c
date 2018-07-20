@@ -48,6 +48,7 @@
 
 #include "diag.h"
 #include "dm.h"
+#include "mbuf.h"
 #include "hdlc.h"
 #include "util.h"
 #include "watch.h"
@@ -101,7 +102,7 @@ static const struct func_desc fs_descriptors = {
 		.bNumEndpoints = 2,
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceSubClass = USB_SUBCLASS_VENDOR_SPEC,
-		.bInterfaceProtocol = 0xff,
+		.bInterfaceProtocol = 0x30,
 		.iInterface = 1, /* first string from the provided table */
 	},
 	.source = {
@@ -129,7 +130,7 @@ static const struct func_desc hs_descriptors = {
 		.bNumEndpoints = 2,
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceSubClass = USB_SUBCLASS_VENDOR_SPEC,
-		.bInterfaceProtocol = 0xff,
+		.bInterfaceProtocol = 0x30,
 		.iInterface = 1, /* first string from the provided table */
 	},
 	.source = {
@@ -157,7 +158,7 @@ static const struct ss_func_desc ss_descriptors = {
 		.bNumEndpoints = 2,
 		.bInterfaceClass = USB_CLASS_VENDOR_SPEC,
 		.bInterfaceSubClass = USB_SUBCLASS_VENDOR_SPEC,
-		.bInterfaceProtocol = 0xff,
+		.bInterfaceProtocol = 0x30,
 		.iInterface = 1, /* first string from the provided table */
 	},
 	.source = {
@@ -205,31 +206,21 @@ static const struct {
 	},
 };
 
-#define USB_DEVNAME "/dev/ffs-diag"
-#define USB_SERIAL 	"0123456789"
-#define GADGET_PATH "/sys/kernel/config/usb_gadget/g1"
-#define UDC_ATTRIB 	"UDC"
-#define UDC_NAME 	"ci_hdrc.0"
-
-struct {
-	const char *dev_name;
-	char serial[64];
-	const char *gadget_path;
-	const char *udc_name;
-} g_usb_config = { USB_DEVNAME, USB_SERIAL, GADGET_PATH, UDC_NAME };
-
 struct usb_handle {
-	int control;
+	int ep0;
 	int bulk_out; /* "out" from the host's perspective => source for diagd */
 	int bulk_in;  /* "in" from the host's perspective => sink for diagd */
+
+	struct diag_client *dm;
+	struct list_head outq;
 };
 
-static int init_functionfs(struct usb_handle *h)
+static int ffs_diag_init(const char *ffs_name, struct usb_handle *h)
 {
-	int ret = 0;
-	ssize_t n;
 	struct desc_v2 desc;
 	int ffs_fd = -1;
+	ssize_t n;
+	int ret;
 
 	desc.header.magic = cpu_to_le32(FUNCTIONFS_DESCRIPTORS_MAGIC_V2);
 	desc.header.length = cpu_to_le32(sizeof(desc));
@@ -241,9 +232,9 @@ static int init_functionfs(struct usb_handle *h)
 	desc.hs_descs = hs_descriptors;
 	desc.ss_descs = ss_descriptors;
 
-	ret = open(USB_DEVNAME, O_DIRECTORY);
+	ret = open(ffs_name, O_DIRECTORY);
 	if (ret < 0) {
-		warn("cannot open device folder %s", USB_DEVNAME);
+		warn("cannot open device folder %s", ffs_name);
 		goto err;
 	}
 	ffs_fd = ret;
@@ -253,16 +244,16 @@ static int init_functionfs(struct usb_handle *h)
 		warn("cannot open control endpoint");
 		goto err;
 	}
-	h->control = ret;
+	h->ep0 = ret;
 
-	n = write(h->control, &desc, sizeof(desc));
+	n = write(h->ep0, &desc, sizeof(desc));
 	if (n < 0) {
 		warn("failed to write descriptors");
 		ret = n;
 		goto err;
 	}
 
-	n = write(h->control, &strings, sizeof(strings));
+	n = write(h->ep0, &strings, sizeof(strings));
 	if (n < 0) {
 		warn("failed to write strings");
 		ret = n;
@@ -291,95 +282,97 @@ err:
 	if (ffs_fd > 0)
 		close(ffs_fd);
 
-	if (h->bulk_in > 0) {
+	if (h->bulk_in > 0)
 		close(h->bulk_in);
-		h->bulk_in = -1;
-	}
 
-	if (h->bulk_out > 0) {
+	if (h->bulk_out > 0)
 		close(h->bulk_out);
-		h->bulk_out = -1;
-	}
 
-	if (h->control > 0) {
-		close(h->control);
-		h->control = -1;
-	}
+	if (h->ep0 > 0)
+		close(h->ep0);
 
 	return ret;
 }
 
-static struct usb_handle *usb_ffs_init()
+static int diag_ffs_recv(struct mbuf *mbuf, void *data)
 {
-	struct usb_handle *h = calloc(1, sizeof(struct usb_handle));
+	struct hdlc_decoder recv_decoder;
+	struct circ_buf recv_buf;
+	struct usb_handle *ffs = data;
+	size_t msglen;
+	void *msg;
 
-	if (h == NULL) {
-		warn("couldn't allocate usb_handle");
-		return h;
+	memset(&recv_decoder, 0, sizeof(recv_decoder));
+
+	memcpy(recv_buf.buf, mbuf->data, mbuf->offset);
+	recv_buf.tail = 0;
+	recv_buf.head = mbuf->offset;
+
+	// print_hex_dump("[USB]", mbuf->data, mbuf->offset);
+
+	for (;;) {
+		msg = hdlc_decode_one(&recv_decoder, &recv_buf, &msglen);
+		if (!msg)
+			break;
+
+		// print_hex_dump("  [MSG]", msg, MIN(msglen, 256));
+
+		diag_client_handle_command(ffs->dm, msg, msglen);
 	}
 
-	h->control = -1;
-	h->bulk_out = -1;
-	h->bulk_in = -1;
-
-	if (init_functionfs(h)) {
-		free(h);
-		h = NULL;
-	}
-
-	return h;
-}
-
-static int enable_udc(bool enable)
-{
-	int gadget_fd, udc_fd;
-	const char* udcname = "";
-
-	if (enable)
-		udcname = g_usb_config.udc_name;
-
-	gadget_fd = open(g_usb_config.gadget_path, O_DIRECTORY);
-	if (gadget_fd < 0)
-		return gadget_fd;
-
-	udc_fd = openat(gadget_fd, UDC_ATTRIB, O_WRONLY);
-	if (udc_fd < 0)
-		err(1, "failed to open UDC\n");
-
-
-	write(udc_fd, udcname, strlen(udcname) + 1);
-
-	close(udc_fd);
-	close(gadget_fd);
+	mbuf->offset = 0;
+	list_add(&ffs->outq, &mbuf->node);
 
 	return 0;
 }
 
-int diag_usb_open(const char *usbname, const char *serial)
+static int ep0_recv(int fd, void *data)
 {
-	struct usb_handle *handle = NULL;
+	struct usb_functionfs_event event;
+	struct usb_handle *ffs = data;
+	ssize_t n;
 
-	if (usbname && usbname[0])
-		g_usb_config.dev_name = usbname;
+	n = read(fd, &event, sizeof(event));
+	if (n <= 0) {
+		warn("failed to read ffs ep0");
+		return 0;
+	}
 
-	if (serial && serial[0])
-		strncpy(g_usb_config.serial, serial, sizeof(g_usb_config.serial) - 1);
+	switch (event.type) {
+	case FUNCTIONFS_ENABLE:
+		watch_add_readq(ffs->bulk_out, &ffs->outq, diag_ffs_recv, ffs);
+		break;
+	}
 
-	handle = usb_ffs_init();
-	if (handle == NULL)
-		return -1;
+	return 0;
+}
 
-	if (enable_udc(true)) {
-		close(handle->control);
-		close(handle->bulk_out);
-		close(handle->bulk_in);
-		free(handle);
+int diag_usb_open(const char *ffs_name)
+{
+	struct usb_handle *ffs;
+	struct mbuf *out_buf;
+	int ret;
+
+	ffs = calloc(1, sizeof(struct usb_handle));
+	if (!ffs)
+		err(1, "couldn't allocate usb_handle");
+
+	out_buf = mbuf_alloc(16384);
+	if (!out_buf)
+		err(1, "couldn't allocate usb out buffer");
+
+	ret = ffs_diag_init(ffs_name, ffs);
+	if (ret < 0) {
+		free(ffs);
 		return -1;
 	}
 
-	printf("Connected to %s %s\n", g_usb_config.dev_name, g_usb_config.serial);
+	list_init(&ffs->outq);
+	list_add(&ffs->outq, &out_buf->node);
 
-	dm_add("USB client", handle->bulk_in, handle->bulk_out, true);
+	watch_add_readfd(ffs->ep0, ep0_recv, ffs);
 
-	return handle->control;
+	ffs->dm = dm_add("USB client", -1, ffs->bulk_in, true);
+
+	return 0;
 }

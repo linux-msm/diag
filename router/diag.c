@@ -64,11 +64,10 @@ static void usage(void)
 	fprintf(stderr,
 		"User space application for diag interface\n"
 		"\n"
-		"usage: diag [-hgsu]\n"
+		"usage: diag [-hsu]\n"
 		"\n"
 		"options:\n"
 		"   -h   show this usage\n"
-		"   -g   <gadget device name[#serial number]>\n"
 		"   -s   <socket address[:port]>\n"
 		"   -u   <uart device name[@baudrate]>\n"
 	);
@@ -82,14 +81,12 @@ int main(int argc, char **argv)
 	int host_port = DEFAULT_SOCKET_PORT;
 	char *uartdev = NULL;
 	int baudrate = DEFAULT_BAUD_RATE;
-	char *gadgetdev = NULL;
-	char *gadgetserial = NULL;
 	char *token;
 	int ret;
 	int c;
 
 	for (;;) {
-		c = getopt(argc, argv, "hs:u:g:");
+		c = getopt(argc, argv, "hs:u:");
 		if (c < 0)
 			break;
 		switch (c) {
@@ -104,10 +101,6 @@ int main(int argc, char **argv)
 			token = strtok(NULL, "");
 			if (token)
 				baudrate = atoi(token);
-			break;
-		case 'g':
-			gadgetdev = strtok(strdup(optarg), "#");
-			gadgetserial = strtok(NULL, "");
 			break;
 		default:
 		case 'h':
@@ -124,15 +117,13 @@ int main(int argc, char **argv)
 		ret = diag_uart_open(uartdev, baudrate);
 		if (ret < 0)
 			errx(1, "failed to open uart\n");
-	} else if (gadgetdev) {
-		ret = diag_usb_open(gadgetdev, gadgetserial);
-		if (ret < 0)
-			errx(1, "failed to open usb\n");
-	} else {
-		ret = diag_unix_open();
-		if (ret < 0)
-			errx(1, "failed to create unix socket dm\n");
 	}
+
+	diag_usb_open("/dev/ffs-diag");
+
+	ret = diag_unix_open();
+	if (ret < 0)
+		errx(1, "failed to create unix socket dm\n");
 
 	peripheral_init();
 

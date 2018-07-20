@@ -110,7 +110,7 @@ extern struct list_head diag_cmds;
 
 int diag_sock_connect(const char *hostname, unsigned short port);
 int diag_uart_open(const char *uartname, unsigned int baudrate);
-int diag_usb_open(const char *usbname, const char *serial);
+int diag_usb_open(const char *ffs_name);
 int diag_unix_open(void);
 
 int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len);
