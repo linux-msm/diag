@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Linaro Ltd.
+ * Copyright (c) 2016-2018, Linaro Ltd.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,11 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+
+#define container_of(ptr, type, member) ({ \
+		const typeof(((type *)0)->member)*__mptr = (ptr);  \
+		(type *)((char *)__mptr - offsetof(type, member)); \
+		})
 
 struct list_head {
 	struct list_head *prev;
@@ -72,5 +77,26 @@ static inline void list_del(struct list_head *item)
 
 #define list_for_each_safe(item, next, list) \
 	for (item = (list)->next, next = item->next; item != list; item = next, next = item->next)
+
+#define list_entry(item, type, member) \
+	container_of(item, type, member)
+
+#define list_entry_first(list, type, member) \
+	container_of((list)->next, type, member)
+
+#define list_entry_next(item, member) \
+	container_of((item)->member.next, typeof(*(item)), member)
+
+#define list_for_each_entry(item, list, member) \
+	for (item = list_entry_first(list, typeof(*(item)), member); \
+	     &item->member != list; \
+	     item = list_entry_next(item, member))
+
+#define list_for_each_entry_safe(item, next, list, member) \
+	for (item = list_entry_first(list, typeof(*(item)), member), \
+	     next = list_entry_next(item, member); \
+	     &item->member != list; \
+	     item = next, \
+	     next = list_entry_next(item, member)) \
 
 #endif
