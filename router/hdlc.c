@@ -150,6 +150,9 @@ void *hdlc_decode_one(struct hdlc_decoder *hdlc, struct circ_buf *buf,
 
 	}
 
+	if (hdlc->raw == hdlc->raw_buf)
+		return NULL;
+
 	hdlc->raw--;
 	hdlc->raw--;
 
