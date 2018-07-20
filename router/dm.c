@@ -65,7 +65,7 @@ struct list_head diag_clients = LIST_INIT(diag_clients);
  * dm_add() - register new DM
  * @dm:		DM object to register
  */
-void dm_add(const char *name, int in_fd, int out_fd, bool hdlc_encoded)
+struct diag_client *dm_add(const char *name, int in_fd, int out_fd, bool hdlc_encoded)
 {
 	struct diag_client *dm;
 
@@ -83,6 +83,8 @@ void dm_add(const char *name, int in_fd, int out_fd, bool hdlc_encoded)
 	watch_add_writeq(dm->out_fd, &dm->outq);
 
 	list_add(&diag_clients, &dm->node);
+
+	return dm;
 }
 
 static int dm_recv_hdlc(struct diag_client *dm)
