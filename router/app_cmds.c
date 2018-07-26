@@ -96,7 +96,14 @@ static int handle_extended_build_id(struct diag_client *client,
 static int handle_keep_alive(struct diag_client *client, const void *buf,
 			     size_t len)
 {
-	return dm_send(client, buf, len);
+	uint8_t resp[16];
+
+	resp[0] = DIAG_CMD_SUBSYS_DISPATCH;
+	resp[1] = DIAG_CMD_KEEP_ALIVE_SUBSYS;
+	resp[2] = DIAG_CMD_KEEP_ALIVE_CMD;
+	memset(resp + 3, 0, sizeof(resp) - 3);
+
+	return dm_send(client, resp, sizeof(resp));
 }
 
 void register_app_cmds(void)
