@@ -108,8 +108,8 @@ static int handle_keep_alive(struct diag_client *client, const void *buf,
 
 void register_app_cmds(void)
 {
-	register_cmd(DIAG_CMD_DIAG_VERSION_ID, handle_diag_version);
-	register_cmd(DIAG_CMD_EXTENDED_BUILD_ID, handle_extended_build_id);
-	register_subsys_cmd(DIAG_CMD_KEEP_ALIVE_SUBSYS, DIAG_CMD_KEEP_ALIVE_CMD,
-			    handle_keep_alive);
+	register_fallback_cmd(DIAG_CMD_DIAG_VERSION_ID, handle_diag_version);
+	register_fallback_cmd(DIAG_CMD_EXTENDED_BUILD_ID, handle_extended_build_id);
+	register_fallback_subsys_cmd(DIAG_CMD_KEEP_ALIVE_SUBSYS,
+				     DIAG_CMD_KEEP_ALIVE_CMD, handle_keep_alive);
 }

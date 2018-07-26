@@ -45,6 +45,7 @@
 #define DIAG_CMD_RSP_BAD_PARAMS				0x14
 #define DIAG_CMD_RSP_BAD_LENGTH				0x15
 
+struct list_head fallback_cmds = LIST_INIT(fallback_cmds);
 struct list_head common_cmds = LIST_INIT(common_cmds);
 
 int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
@@ -97,7 +98,17 @@ static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
 		handled++;
 	}
 
-	return handled ? 0 : -ENOENT;
+	if (handled)
+		return 0;
+
+	list_for_each_entry(dc, &fallback_cmds, node) {
+		if (key < dc->first || key > dc->last)
+			continue;
+
+		return dc->cb(client, ptr, len);
+	}
+
+	return -ENOENT;
 }
 
 static void diag_rsp_bad_command(struct diag_client *client, uint8_t *msg,
@@ -140,8 +151,9 @@ int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t
 	return 0;
 }
 
-void register_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
-					     const void *buf, size_t len))
+void register_fallback_cmd(unsigned int cmd,
+			   int(*cb)(struct diag_client *client,
+				    const void *buf, size_t len))
 {
 	struct diag_cmd *dc;
 	unsigned int key = 0xffff0000 | cmd;
@@ -154,12 +166,12 @@ void register_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
 	dc->last = key;
 	dc->cb = cb;
 
-	list_add(&diag_cmds, &dc->node);
+	list_add(&fallback_cmds, &dc->node);
 }
 
-void register_subsys_cmd(unsigned int subsys, unsigned int cmd,
-			 int(*cb)(struct diag_client *client,
-				  const void *buf, size_t len))
+void register_fallback_subsys_cmd(unsigned int subsys, unsigned int cmd,
+				  int(*cb)(struct diag_client *client,
+					   const void *buf, size_t len))
 {
 	struct diag_cmd *dc;
 	unsigned int key = DIAG_CMD_SUBSYS_DISPATCH << 24 |
@@ -173,7 +185,7 @@ void register_subsys_cmd(unsigned int subsys, unsigned int cmd,
 	dc->last = key;
 	dc->cb = cb;
 
-	list_add(&diag_cmds, &dc->node);
+	list_add(&fallback_cmds, &dc->node);
 }
 
 void register_common_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
