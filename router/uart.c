@@ -63,6 +63,7 @@ static unsigned int check_baudrate(unsigned int baudrate)
 
 int diag_uart_open(const char *uartname, unsigned int baudrate)
 {
+	struct diag_client *dm;
 	int ret;
 	int fd;
 	struct termios options, options_save;
@@ -105,7 +106,8 @@ int diag_uart_open(const char *uartname, unsigned int baudrate)
 
 	printf("Connected to %s@%d\n", uartname, baudrate);
 
-	dm_add("UART client", fd, fd, true);
+	dm = dm_add("UART client", fd, fd, true);
+	dm_enable(dm);
 
 	return fd;
 }

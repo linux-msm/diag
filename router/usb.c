@@ -323,6 +323,10 @@ static int ep0_recv(int fd, void *data)
 	switch (event.type) {
 	case FUNCTIONFS_ENABLE:
 		watch_add_readq(ffs->bulk_out, &ffs->outq, diag_ffs_recv, ffs);
+		dm_enable(ffs->dm);
+		break;
+	case FUNCTIONFS_DISABLE:
+		dm_disable(ffs->dm);
 		break;
 	}
 

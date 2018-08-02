@@ -52,6 +52,8 @@ struct diag_client {
 
 	bool hdlc_encoded;
 
+	bool enabled;
+
 	struct circ_buf recv_buf;
 	struct hdlc_decoder recv_decoder;
 
@@ -84,6 +86,9 @@ struct diag_client *dm_add(const char *name, int in_fd, int out_fd, bool hdlc_en
 	watch_add_writeq(dm->out_fd, &dm->outq);
 
 	list_add(&diag_clients, &dm->node);
+
+	/* Disable DM by default, so that  */
+	dm->enabled = false;
 
 	return dm;
 }
@@ -166,6 +171,9 @@ int dm_recv(int fd, void* data)
  */
 ssize_t dm_send(struct diag_client *dm, const void *ptr, size_t len)
 {
+	if (!dm->enabled)
+		return 0;
+
 	if (dm->hdlc_encoded)
 		hdlc_enqueue(&dm->outq, ptr, len);
 	else
@@ -191,3 +199,14 @@ void dm_broadcast(const void *ptr, size_t len)
 	}
 }
 
+void dm_enable(struct diag_client *dm)
+{
+	dm->enabled = true;
+}
+
+void dm_disable(struct diag_client *dm)
+{
+	dm->enabled = false;
+
+	/* XXX: purge dm->outq */
+}

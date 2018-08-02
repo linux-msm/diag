@@ -53,6 +53,7 @@
 int diag_sock_connect(const char *hostname, unsigned short port)
 {
 	struct sockaddr_in addr;
+	struct diag_client *dm;
 	struct hostent *host;
 	int ret;
 	int fd;
@@ -80,7 +81,8 @@ int diag_sock_connect(const char *hostname, unsigned short port)
 
 	printf("Connected to %s:%d\n", hostname, port);
 
-	dm_add("DIAG CLIENT", fd, fd, true);
+	dm = dm_add("DIAG CLIENT", fd, fd, true);
+	dm_enable(dm);
 
 	return fd;
 }

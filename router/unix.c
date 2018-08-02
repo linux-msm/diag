@@ -41,6 +41,7 @@
 
 static int unix_listen(int fd, void *data)
 {
+	struct diag_client *dm;
 	int client;
 	int ret;
 
@@ -56,7 +57,8 @@ static int unix_listen(int fd, void *data)
 		return 0;
 	}
 
-	dm_add("UNIX", client, client, false);
+	dm = dm_add("UNIX", client, client, false);
+	dm_enable(dm);
 
 	return 0;
 }
