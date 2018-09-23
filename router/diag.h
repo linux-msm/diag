@@ -33,6 +33,7 @@
 #define __DIAG_H__
 
 #include <stdint.h>
+#include <sys/types.h>
 
 #include "circ_buf.h"
 #include "hdlc.h"
