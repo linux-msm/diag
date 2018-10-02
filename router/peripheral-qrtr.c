@@ -283,10 +283,16 @@ static int qrtr_perif_init_subsystem(const char *name, int instance_base)
 	if (perif->dci_cmd_fd < 0)
 		err(1, "failed to create dci command socket");
 
+	/*
+	 * DIAG does not use the normal packing of "instance << 8 | version" in
+	 * the one 32-bit "instance" field of the service notifications, so
+	 * pass the DIAG instance information as "version" into these functions
+	 * instead.
+	 */
 	qrtr_publish(perif->cntl_fd, DIAG_SERVICE_ID, instance_base + DIAG_INSTANCE_CNTL, 0);
 	qrtr_new_lookup(perif->cmd_fd, DIAG_SERVICE_ID, instance_base + DIAG_INSTANCE_CMD, 0);
 	qrtr_publish(perif->data_fd, DIAG_SERVICE_ID, instance_base + DIAG_INSTANCE_DATA, 0);
-	qrtr_publish(perif->dci_cmd_fd, DIAG_SERVICE_ID, instance_base + DIAG_INSTANCE_DCI_CMD, 0);
+	qrtr_publish(perif->dci_cmd_fd, DIAG_SERVICE_ID, instance_base + DIAG_INSTANCE_DCI, 0);
 
 	watch_add_readfd(perif->cntl_fd, qrtr_cntl_recv, perif);
 	watch_add_readfd(perif->cmd_fd, qrtr_cmd_recv, perif);
