@@ -585,8 +585,11 @@ int diag_cmd_update_event_mask(uint16_t num_bits, const uint8_t *mask)
 
 void diag_cmd_toggle_events(bool enabled)
 {
-	if (enabled)
-		memset(event_mask.ptr, 0x00, event_mask.mask_len);
-	else
+	if (enabled) {
 		memset(event_mask.ptr, 0xff, event_mask.mask_len);
+		event_mask.status = DIAG_CTRL_MASK_ALL_ENABLED;
+	} else {
+		memset(event_mask.ptr, 0x00, event_mask.mask_len);
+		event_mask.status = DIAG_CTRL_MASK_ALL_DISABLED;
+	}
 }

@@ -94,11 +94,6 @@ static int qrtr_cntl_recv(int fd, void *data)
 		if (!perif->cntl_open) {
 			connect(perif->cntl_fd, (struct sockaddr *)&sq, sizeof(sq));
 			perif->cntl_open = true;
-
-			/* Send current message mask to the newly found peripheral */
-			diag_cntl_send_masks(perif);
-			diag_cntl_set_diag_mode(perif, true);
-			diag_cntl_set_buffering_mode(perif, 0);
 			watch_add_writeq(perif->cntl_fd, &perif->cntlq);
 		}
 
@@ -200,6 +195,7 @@ static int qrtr_data_recv(int fd, void *data)
 	uint8_t buf[4096];
 	ssize_t n;
 	int ret;
+	struct non_hdlc_pkt *frame;
 
 	sl = sizeof(sq);
 	n = recvfrom(fd, buf, sizeof(buf), 0, (void *)&sq, &sl);
@@ -223,11 +219,24 @@ static int qrtr_data_recv(int fd, void *data)
 		if (!perif->data_open) {
 			connect(perif->data_fd, (struct sockaddr *)&sq, sizeof(sq));
 			perif->data_open = true;
-
 			watch_add_writeq(perif->data_fd, &perif->dataq);
 		}
+		frame = pkt.data;
+		if (frame->start != 0x7e || frame->version != 1) {
+			fprintf(stderr, "invalid non-HDLC frame\n");
+			break;
+		}
 
-		dm_broadcast(buf, n);
+		if (sizeof(*frame) + frame->length + 1 > pkt.data_len) {
+			fprintf(stderr, "truncated non-HDLC frame\n");
+			break;
+		}
+
+		if (frame->payload[frame->length] != 0x7e) {
+			fprintf(stderr, "non-HDLC frame is not truncated\n");
+			break;
+		}
+		dm_broadcast(frame->payload, frame->length);
 		break;
 	default:
 		fprintf(stderr, "Unhandled DIAG DATA message from %d:%d (%d)\n",
@@ -297,7 +306,7 @@ static int qrtr_perif_init_subsystem(const char *name, int instance_base)
 	watch_add_readfd(perif->cntl_fd, qrtr_cntl_recv, perif);
 	watch_add_readfd(perif->cmd_fd, qrtr_cmd_recv, perif);
 	watch_add_readfd(perif->data_fd, qrtr_data_recv, perif);
-
+	list_add(&peripherals, &perif->node);
 	return 0;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016, Linaro Ltd.
  * All rights reserved.
  *
@@ -488,6 +488,10 @@ static void diag_cntl_send_feature_mask(struct peripheral *peripheral, uint32_t 
 	pkt->mask = mask;
 
 	queue_push(&peripheral->cntlq, pkt, len);
+	/*send other control packets after sending feature mask */
+	diag_cntl_send_masks(peripheral);
+	diag_cntl_set_diag_mode(peripheral, true);
+	diag_cntl_set_buffering_mode(peripheral, 0);
 }
 
 void diag_cntl_set_diag_mode(struct peripheral *perif, bool real_time)

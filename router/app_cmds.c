@@ -46,6 +46,7 @@
 #define DIAG_PROTOCOL_VERSION_NUMBER	2
 
 #define DIAG_CMD_EXTENDED_BUILD_ID	124
+#define DIAG_CMD_DIAG_VERSION_NO 0
 #define MOBILE_MODEL_NUMBER		0
 #define MOBILE_SOFTWARE_REVISION	"OE"
 #define MOBILE_MODEL_STRING		"DB410C"
@@ -55,6 +56,16 @@ static int handle_diag_version(struct diag_client *client, const void *buf,
 			       size_t len)
 {
 	uint8_t resp[] = { DIAG_CMD_DIAG_VERSION_ID, DIAG_PROTOCOL_VERSION_NUMBER };
+
+	return dm_send(client, resp, sizeof(resp));
+}
+
+static int handle_diag_version_no(struct diag_client *client, const void *buf,
+			       size_t len)
+{
+	uint8_t resp[55];
+
+	memset(resp, 0, 55);
 
 	return dm_send(client, resp, sizeof(resp));
 }
@@ -109,6 +120,7 @@ static int handle_keep_alive(struct diag_client *client, const void *buf,
 void register_app_cmds(void)
 {
 	register_fallback_cmd(DIAG_CMD_DIAG_VERSION_ID, handle_diag_version);
+	register_fallback_cmd(DIAG_CMD_DIAG_VERSION_NO, handle_diag_version_no);
 	register_fallback_cmd(DIAG_CMD_EXTENDED_BUILD_ID, handle_extended_build_id);
 	register_fallback_subsys_cmd(DIAG_CMD_KEEP_ALIVE_SUBSYS,
 				     DIAG_CMD_KEEP_ALIVE_CMD, handle_keep_alive);
