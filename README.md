@@ -20,7 +20,7 @@ Ensure that your kernel is built with **CONFIG_CONFIGFS_FS** and **CONFIG_USB_CO
     echo SERIAL > $G1/strings/0x409/serialnumber
     echo MANUFACTURER > $G1/strings/0x409/manufacturer
     echo PRODUCT > $G1/strings/0x409/product
-    echo "DIAG" > $G1/configs/c.1/strings/0x409/configuration
+    echo "diag_dun" > $G1/configs/c.1/strings/0x409/configuration
     ln -s $G1/functions/ffs.diag $G1/configs/c.1
     
     mkdir /dev/ffs-diag
