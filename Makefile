@@ -8,7 +8,7 @@ SEND_DATA := send_data
 
 all: $(DIAG) $(SEND_DATA)
 
-CFLAGS := -Wall -g -O2
+CFLAGS ?= -Wall -g -O2
 ifeq ($(HAVE_LIBUDEV),1)
 CFLAGS += -DHAS_LIBUDEV=1
 LDFLAGS += -ludev
