@@ -128,6 +128,7 @@ static int handle_logging_configuration(struct diag_client *client,
 		} __packed *resp;
 		uint32_t resp_size = sizeof(*resp);
 		uint32_t mask_size = sizeof(*mask_to_set) + BITS_TO_BYTES(mask_to_set->num_items);
+		uint32_t num_items;
 
 		if (sizeof(*request_header) + mask_size != len)
 			return -EMSGSIZE;
@@ -139,7 +140,9 @@ static int handle_logging_configuration(struct diag_client *client,
 			return -errno;
 		}
 		memcpy(resp, request_header, sizeof(*request_header));
-		diag_cmd_set_log_mask(mask_to_set->equip_id, &mask_to_set->num_items, mask_to_set->mask, &mask_size);
+		num_items = mask_to_set->num_items;
+		diag_cmd_set_log_mask(mask_to_set->equip_id, &num_items, mask_to_set->mask, &mask_size);
+		mask_to_set->num_items = num_items;
 		memcpy(&resp->mask_structure, mask_to_set, mask_size); // num_items might have been capped!!!
 		resp->status = DIAG_CMD_STATUS_SUCCESS;
 
