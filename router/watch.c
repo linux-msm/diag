@@ -337,7 +337,10 @@ static void watch_handle_eventfd(int evfd, aio_context_t ioctx)
 			if (iocb->aio_fildes == w->fd) {
 				assert(w->pending_aio);
 
-				if (!w->is_write)
+				if (ev[i].res == -EAGAIN)
+					continue;
+
+				if (!w->is_write && ev[i].res >= 0)
 					w->pending_aio->offset = ev[i].res;
 
 				w->aio_complete(w->pending_aio, w->data);
