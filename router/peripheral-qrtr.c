@@ -98,6 +98,10 @@ static int qrtr_cntl_recv(int fd, void *data)
 		}
 
 		return diag_cntl_recv(perif, pkt.data, pkt.data_len);
+	case QRTR_TYPE_BYE:
+		watch_remove_writeq(perif->cntl_fd);
+		perif->cntl_open = false;
+		break;
 	default:
 		fprintf(stderr, "Unhandled DIAG CNTL message from %d:%d (%d)\n",
 			pkt.node, pkt.port, pkt.type);
@@ -177,6 +181,9 @@ static int qrtr_cmd_recv(int fd, void *data)
 			err(1, "failed to connect to %d:%d", cmdsq.sq_node, cmdsq.sq_port);
 		watch_add_writeq(perif->cmd_fd, &perif->cmdq);
 		break;
+	case QRTR_TYPE_DEL_SERVER:
+		watch_remove_writeq(perif->cmd_fd);
+		break;
 	default:
 		fprintf(stderr, "Unhandled DIAG CMD message from %d:%d (%d)\n",
 			pkt.node, pkt.port, pkt.type);
@@ -237,6 +244,10 @@ static int qrtr_data_recv(int fd, void *data)
 			break;
 		}
 		dm_broadcast(frame->payload, frame->length);
+		break;
+	case QRTR_TYPE_BYE:
+		watch_remove_writeq(perif->data_fd);
+		perif->data_open = false;
 		break;
 	default:
 		fprintf(stderr, "Unhandled DIAG DATA message from %d:%d (%d)\n",
