@@ -39,7 +39,7 @@ struct diag_client;
 struct diag_client *dm_add(const char *name, int in_fd, int out_fd, bool hdlc_encoded);
 int dm_recv(int fd, void* data);
 ssize_t dm_send(struct diag_client *dm, const void *ptr, size_t len);
-void dm_broadcast(const void *ptr, size_t len);
+void dm_broadcast(const void *ptr, size_t len, struct watch_flow *flow);
 void dm_enable(struct diag_client *dm);
 void dm_disable(struct diag_client *dm);
 

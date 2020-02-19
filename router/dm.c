@@ -163,6 +163,20 @@ int dm_recv(int fd, void* data)
 		return dm_recv_raw(dm);
 }
 
+static ssize_t dm_send_flow(struct diag_client *dm, const void *ptr, size_t len,
+			    struct watch_flow *flow)
+{
+	if (!dm->enabled)
+		return 0;
+
+	if (dm->hdlc_encoded)
+		hdlc_enqueue_flow(&dm->outq, ptr, len, flow);
+	else
+		queue_push_flow(&dm->outq, ptr, len, flow);
+
+	return 0;
+}
+
 /**
  * dm_send() - enqueue message to DM
  * @dm:		dm to be receiving the message
@@ -171,23 +185,16 @@ int dm_recv(int fd, void* data)
  */
 ssize_t dm_send(struct diag_client *dm, const void *ptr, size_t len)
 {
-	if (!dm->enabled)
-		return 0;
-
-	if (dm->hdlc_encoded)
-		hdlc_enqueue(&dm->outq, ptr, len);
-	else
-		queue_push(&dm->outq, ptr, len);
-
-	return 0;
+	return dm_send_flow(dm, ptr, len, NULL);
 }
 
 /**
  * dm_broadcast() - send message to all registered DMs
  * @ptr:	pointer to raw message to be sent
  * @len:	length of message
+ * @flow:	flow control context for the peripheral
  */
-void dm_broadcast(const void *ptr, size_t len)
+void dm_broadcast(const void *ptr, size_t len, struct watch_flow *flow)
 {
 	struct diag_client *dm;
 	struct list_head *item;
@@ -195,7 +202,7 @@ void dm_broadcast(const void *ptr, size_t len)
 	list_for_each(item, &diag_clients) {
 		dm = container_of(item, struct diag_client, node);
 
-		dm_send(dm, ptr, len);
+		dm_send_flow(dm, ptr, len, flow);
 	}
 }
 

@@ -104,7 +104,7 @@ static int diag_cmd_recv(int fd, void *data)
 		return 0;
 	}
 
-	dm_broadcast(frame->payload, frame->length);
+	dm_broadcast(frame->payload, frame->length, NULL);
 
 	return 0;
 }
@@ -127,7 +127,7 @@ static int diag_data_recv_hdlc(int fd, struct peripheral *peripheral)
 			if (!msg)
 				break;
 
-			dm_broadcast(msg, msglen);
+			dm_broadcast(msg, msglen, NULL);
 		}
 	}
 
@@ -144,7 +144,7 @@ static int diag_data_recv_raw(int fd, struct peripheral *peripheral)
 		if (n < 0)
 			return -errno;
 
-		dm_broadcast(buf, n);
+		dm_broadcast(buf, n, NULL);
 	}
 
 	/* Not reached */

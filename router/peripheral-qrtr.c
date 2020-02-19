@@ -165,7 +165,7 @@ static int qrtr_cmd_recv(int fd, void *data)
 			break;
 		}
 
-		dm_broadcast(frame->payload, frame->length);
+		dm_broadcast(frame->payload, frame->length, NULL);
 		break;
 	case QRTR_TYPE_NEW_SERVER:
 		if (pkt.node == 0 && pkt.port == 0)
@@ -243,7 +243,7 @@ static int qrtr_data_recv(int fd, void *data)
 			fprintf(stderr, "non-HDLC frame is not truncated\n");
 			break;
 		}
-		dm_broadcast(frame->payload, frame->length);
+		dm_broadcast(frame->payload, frame->length, NULL);
 		break;
 	case QRTR_TYPE_BYE:
 		watch_remove_writeq(perif->data_fd);
