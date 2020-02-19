@@ -127,7 +127,7 @@ static int diag_data_recv_hdlc(int fd, struct peripheral *peripheral)
 			if (!msg)
 				break;
 
-			dm_broadcast(msg, msglen, NULL);
+			dm_broadcast(msg, msglen, peripheral->flow);
 		}
 	}
 
@@ -144,7 +144,7 @@ static int diag_data_recv_raw(int fd, struct peripheral *peripheral)
 		if (n < 0)
 			return -errno;
 
-		dm_broadcast(buf, n, NULL);
+		dm_broadcast(buf, n, peripheral->flow);
 	}
 
 	/* Not reached */
@@ -326,7 +326,7 @@ static void peripheral_open(void *data)
 	watch_add_writeq(peripheral->cntl_fd, &peripheral->cntlq);
 	watch_add_writeq(peripheral->data_fd, &peripheral->dataq);
 	watch_add_readfd(peripheral->cntl_fd, rpmsg_perif_cntl_recv, peripheral, NULL);
-	watch_add_readfd(peripheral->data_fd, diag_data_recv, peripheral, NULL);
+	watch_add_readfd(peripheral->data_fd, diag_data_recv, peripheral, peripheral->flow);
 	if (peripheral->cmd_fd >= 0) {
 		watch_add_readfd(peripheral->cmd_fd, diag_cmd_recv, peripheral, NULL);
 		watch_add_writeq(peripheral->cmd_fd, &peripheral->cmdq);
@@ -356,6 +356,7 @@ static void perif_rpmsg_close(struct peripheral *peripheral)
 static int peripheral_create(const char *rproc, const char *channel)
 {
 	struct peripheral *peripheral;
+	struct watch_flow *flow;
 	struct list_head *item;
 
 	/* Only trigger the creation of a peripheral on primary channels */
@@ -371,12 +372,15 @@ static int peripheral_create(const char *rproc, const char *channel)
 	peripheral = malloc(sizeof(*peripheral));
 	memset(peripheral, 0, sizeof(*peripheral));
 
+	flow = watch_flow_new();
+
 	peripheral->name = strdup(rproc);
 	peripheral->data_fd = -1;
 	peripheral->cntl_fd = -1;
 	peripheral->cmd_fd = -1;
 	peripheral->send = perif_rpmsg_send;
 	peripheral->close = perif_rpmsg_close;
+	peripheral->flow = flow;
 	list_init(&peripheral->cmdq);
 	list_init(&peripheral->cntlq);
 	list_init(&peripheral->dataq);

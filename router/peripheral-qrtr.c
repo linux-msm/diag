@@ -243,7 +243,7 @@ static int qrtr_data_recv(int fd, void *data)
 			fprintf(stderr, "non-HDLC frame is not truncated\n");
 			break;
 		}
-		dm_broadcast(frame->payload, frame->length, NULL);
+		dm_broadcast(frame->payload, frame->length, perif->flow);
 		break;
 	case QRTR_TYPE_BYE:
 		watch_remove_writeq(perif->data_fd);
@@ -275,13 +275,17 @@ void qrtr_perif_close(struct peripheral *perif)
 static int qrtr_perif_init_subsystem(const char *name, int instance_base)
 {
 	struct peripheral *perif;
+	struct watch_flow *flow;
 
 	perif = calloc(1, sizeof(*perif));
+
+	flow = watch_flow_new();
 
 	perif->name = strdup(name);
 	perif->send = qrtr_perif_send;
 	perif->close = qrtr_perif_close;
 	perif->sockets = true;
+	perif->flow = flow;
 
 	list_init(&perif->cmdq);
 	list_init(&perif->cntlq);
@@ -316,7 +320,7 @@ static int qrtr_perif_init_subsystem(const char *name, int instance_base)
 
 	watch_add_readfd(perif->cntl_fd, qrtr_cntl_recv, perif, NULL);
 	watch_add_readfd(perif->cmd_fd, qrtr_cmd_recv, perif, NULL);
-	watch_add_readfd(perif->data_fd, qrtr_data_recv, perif, NULL);
+	watch_add_readfd(perif->data_fd, qrtr_data_recv, perif, flow);
 	list_add(&peripherals, &perif->node);
 	return 0;
 }
