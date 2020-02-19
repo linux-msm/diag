@@ -83,6 +83,8 @@ struct peripheral {
 	int cmd_fd;
 	int dci_cmd_fd;
 
+	struct watch_flow *flow;
+
 	int diag_id;
 
 	bool sockets;
