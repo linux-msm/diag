@@ -49,6 +49,14 @@
 #include "util.h"
 #include "watch.h"
 
+/**
+ * struct watch_flow - flow control context
+ * @packets: number of outstanding packets
+ */
+struct watch_flow {
+	int packets;
+};
+
 struct watch {
 	int fd;
 	int (*cb)(int, void*);
@@ -106,6 +114,30 @@ static long io_submit(aio_context_t ctx, long n, struct iocb **paiocb)
 	return syscall(__NR_io_submit, ctx, n, paiocb);
 }
 
+struct watch_flow *watch_flow_new(void)
+{
+	return calloc(1, sizeof(struct watch_flow));
+}
+
+void watch_flow_inc(struct watch_flow *flow)
+{
+	if (!flow)
+		return;
+
+	flow->packets++;
+}
+
+static void watch_flow_dec(struct watch_flow *flow)
+{
+	if (!flow)
+		return;
+
+	if (!flow->packets)
+		fprintf(stderr, "unbalanced flow control\n");
+	else
+		flow->packets--;
+}
+
 int watch_add_readfd(int fd, int (*cb)(int, void*), void *data)
 {
 	struct watch *w;
@@ -146,6 +178,7 @@ int watch_add_readq(int fd, struct list_head *queue,
 
 static int watch_free_write_aio(struct mbuf *mbuf, void *data)
 {
+	watch_flow_dec(mbuf->flow);
 	free(mbuf);
 
 	return 0;

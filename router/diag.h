@@ -38,6 +38,7 @@
 #include "circ_buf.h"
 #include "hdlc.h"
 #include "list.h"
+#include "watch.h"
 
 #define DEFAULT_SOCKET_PORT 2500
 #define DEFAULT_BAUD_RATE 115200
@@ -106,6 +107,8 @@ struct diag_cmd {
 };
 
 void queue_push(struct list_head *queue, const void *msg, size_t msglen);
+void queue_push_flow(struct list_head *queue, const void *msg, size_t msglen,
+		     struct watch_flow *flow);
 
 extern struct list_head diag_cmds;
 
@@ -117,6 +120,8 @@ int diag_unix_open(void);
 int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t len);
 
 int hdlc_enqueue(struct list_head *queue, const void *buf, size_t msglen);
+int hdlc_enqueue_flow(struct list_head *queue, const void *buf, size_t msglen,
+		 struct watch_flow *flow);
 
 void register_fallback_cmd(unsigned int cmd,
 			   int(*cb)(struct diag_client *client,

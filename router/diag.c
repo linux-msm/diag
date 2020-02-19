@@ -47,7 +47,8 @@
 
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 
-void queue_push(struct list_head *queue, const void *msg, size_t msglen)
+void queue_push_flow(struct list_head *queue, const void *msg, size_t msglen,
+		     struct watch_flow *flow)
 {
 	struct mbuf *mbuf;
 	void *ptr;
@@ -56,7 +57,16 @@ void queue_push(struct list_head *queue, const void *msg, size_t msglen)
 	ptr = mbuf_put(mbuf, msglen);
 	memcpy(ptr, msg, msglen);
 
+	mbuf->flow = flow;
+
+	watch_flow_inc(flow);
+
 	list_add(queue, &mbuf->node);
+}
+
+void queue_push(struct list_head *queue, const void *msg, size_t msglen)
+{
+	queue_push_flow(queue, msg, msglen, NULL);
 }
 
 static void usage(void)

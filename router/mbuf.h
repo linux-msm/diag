@@ -33,11 +33,15 @@
 
 #include "list.h"
 
+struct watch_flow;
+
 struct mbuf {
 	struct list_head node;
 
 	size_t size;
 	size_t offset;
+
+	struct watch_flow *flow;
 
 	char data[];
 };

@@ -48,4 +48,10 @@ int watch_add_timer(void (*cb)(void *), void *data,
 void watch_quit(void);
 void watch_run(void);
 
+
+struct watch_flow;
+
+struct watch_flow *watch_flow_new(void);
+void watch_flow_inc(struct watch_flow *flow);
+
 #endif

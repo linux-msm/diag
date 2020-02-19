@@ -48,7 +48,8 @@
 struct list_head fallback_cmds = LIST_INIT(fallback_cmds);
 struct list_head common_cmds = LIST_INIT(common_cmds);
 
-int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
+int hdlc_enqueue_flow(struct list_head *queue, const void *msg, size_t msglen,
+		      struct watch_flow *flow)
 {
 	size_t outlen;
 	void *outbuf;
@@ -57,10 +58,15 @@ int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
 	if (!outbuf)
 		err(1, "failed to allocate hdlc destination buffer");
 
-	queue_push(queue, outbuf, outlen);
+	queue_push_flow(queue, outbuf, outlen, flow);
 	free(outbuf);
 
 	return 0;
+}
+
+int hdlc_enqueue(struct list_head *queue, const void *msg, size_t msglen)
+{
+	return hdlc_enqueue_flow(queue, msg, msglen, NULL);
 }
 
 static int diag_cmd_dispatch(struct diag_client *client, uint8_t *ptr,
