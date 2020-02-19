@@ -49,6 +49,8 @@
 #include "util.h"
 #include "watch.h"
 
+#define FLOW_WATERMARK	10
+
 /**
  * struct watch_flow - flow control context
  * @packets: number of outstanding packets
@@ -67,6 +69,8 @@ struct watch {
 	struct mbuf *pending_aio;
 
 	bool is_write;
+
+	struct watch_flow *flow;
 
 	int (*aio_complete)(struct mbuf *, void*);
 
@@ -138,7 +142,13 @@ static void watch_flow_dec(struct watch_flow *flow)
 		flow->packets--;
 }
 
-int watch_add_readfd(int fd, int (*cb)(int, void*), void *data)
+static bool watch_flow_blocked(struct watch_flow *flow)
+{
+	return flow && flow->packets > FLOW_WATERMARK;
+}
+
+int watch_add_readfd(int fd, int (*cb)(int, void*), void *data,
+		     struct watch_flow *flow)
 {
 	struct watch *w;
 
@@ -149,6 +159,7 @@ int watch_add_readfd(int fd, int (*cb)(int, void*), void *data)
 	w->fd = fd;
 	w->cb = cb;
 	w->data = data;
+	w->flow = flow;
 
 	list_add(&read_watches, &w->node);
 
@@ -428,6 +439,10 @@ void watch_run(void)
 		nfds = evfd + 1;
 
 		list_for_each_entry(w, &read_watches, node) {
+			/* Skip read watches with flows that are blocked */
+			if (watch_flow_blocked(w->flow))
+				continue;
+
 			FD_SET(w->fd, &rfds);
 
 			nfds = MAX(w->fd + 1, nfds);

@@ -356,7 +356,7 @@ int diag_usb_open(const char *ffs_name)
 	list_init(&ffs->outq);
 	list_add(&ffs->outq, &out_buf->node);
 
-	watch_add_readfd(ffs->ep0, ep0_recv, ffs);
+	watch_add_readfd(ffs->ep0, ep0_recv, ffs, NULL);
 
 	ffs->dm = dm_add("USB client", -1, ffs->bulk_in, true);
 

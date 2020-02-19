@@ -325,10 +325,10 @@ static void peripheral_open(void *data)
 
 	watch_add_writeq(peripheral->cntl_fd, &peripheral->cntlq);
 	watch_add_writeq(peripheral->data_fd, &peripheral->dataq);
-	watch_add_readfd(peripheral->cntl_fd, rpmsg_perif_cntl_recv, peripheral);
-	watch_add_readfd(peripheral->data_fd, diag_data_recv, peripheral);
+	watch_add_readfd(peripheral->cntl_fd, rpmsg_perif_cntl_recv, peripheral, NULL);
+	watch_add_readfd(peripheral->data_fd, diag_data_recv, peripheral, NULL);
 	if (peripheral->cmd_fd >= 0) {
-		watch_add_readfd(peripheral->cmd_fd, diag_cmd_recv, peripheral);
+		watch_add_readfd(peripheral->cmd_fd, diag_cmd_recv, peripheral, NULL);
 		watch_add_writeq(peripheral->cmd_fd, &peripheral->cmdq);
 	}
 
@@ -473,7 +473,7 @@ int peripheral_rpmsg_init(void)
 		udev_device_unref(dev);
 	}
 
-	watch_add_readfd(fd, peripheral_udev_update, mon);
+	watch_add_readfd(fd, peripheral_udev_update, mon, NULL);
 
 	return 0;
 }

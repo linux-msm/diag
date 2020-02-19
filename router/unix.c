@@ -90,7 +90,7 @@ int diag_unix_open(void)
 		return -1;
 	}
 
-	watch_add_readfd(fd, unix_listen, NULL);
+	watch_add_readfd(fd, unix_listen, NULL, NULL);
 
 	return 0;
 }

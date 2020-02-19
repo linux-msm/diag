@@ -314,9 +314,9 @@ static int qrtr_perif_init_subsystem(const char *name, int instance_base)
 	qrtr_publish(perif->data_fd, DIAG_SERVICE_ID, instance_base + DIAG_INSTANCE_DATA, 0);
 	qrtr_publish(perif->dci_cmd_fd, DIAG_SERVICE_ID, instance_base + DIAG_INSTANCE_DCI, 0);
 
-	watch_add_readfd(perif->cntl_fd, qrtr_cntl_recv, perif);
-	watch_add_readfd(perif->cmd_fd, qrtr_cmd_recv, perif);
-	watch_add_readfd(perif->data_fd, qrtr_data_recv, perif);
+	watch_add_readfd(perif->cntl_fd, qrtr_cntl_recv, perif, NULL);
+	watch_add_readfd(perif->cmd_fd, qrtr_cmd_recv, perif, NULL);
+	watch_add_readfd(perif->data_fd, qrtr_data_recv, perif, NULL);
 	list_add(&peripherals, &perif->node);
 	return 0;
 }

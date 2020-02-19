@@ -82,7 +82,7 @@ struct diag_client *dm_add(const char *name, int in_fd, int out_fd, bool hdlc_en
 	list_init(&dm->outq);
 
 	if (dm->in_fd >= 0)
-		watch_add_readfd(dm->in_fd, dm_recv, dm);
+		watch_add_readfd(dm->in_fd, dm_recv, dm, NULL);
 	watch_add_writeq(dm->out_fd, &dm->outq);
 
 	list_add(&diag_clients, &dm->node);

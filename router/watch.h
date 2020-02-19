@@ -35,8 +35,10 @@
 #include "list.h"
 
 struct mbuf;
+struct watch_flow;
 
-int watch_add_readfd(int fd, int (*cb)(int, void*), void *data);
+int watch_add_readfd(int fd, int (*cb)(int, void*), void *data,
+		     struct watch_flow *flow);
 int watch_add_readq(int fd, struct list_head *queue,
 		    int (*cb)(struct mbuf *mbuf, void *data), void *data);
 int watch_add_writeq(int fd, struct list_head *queue);
