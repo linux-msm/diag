@@ -413,6 +413,7 @@ static void watch_handle_eventfd(int evfd, aio_context_t ioctx)
 
 void watch_run(void)
 {
+	struct timeval *timeout;
 	struct timer *timer;
 	struct timeval now;
 	struct timeval tv;
@@ -461,12 +462,13 @@ void watch_run(void)
 
 			if (tv.tv_sec < 0)
 				tv.tv_sec = tv.tv_usec = 0;
+
+			timeout = &tv;
 		} else {
-			tv.tv_sec = 10;
-			tv.tv_usec = 0;
+			timeout = NULL;
 		}
 
-		ret = select(nfds, &rfds, NULL, NULL, &tv);
+		ret = select(nfds, &rfds, NULL, NULL, timeout);
 		if (ret < 0) {
 			warn("failed to select");
 			break;
