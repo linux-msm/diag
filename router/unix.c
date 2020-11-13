@@ -34,6 +34,7 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "diag.h"
 #include "dm.h"
