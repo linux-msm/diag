@@ -102,10 +102,17 @@ static long io_destroy(aio_context_t ctx)
 	return syscall(__NR_io_destroy, ctx);
 }
 
-static long io_getevents(aio_context_t ctx, long min_nr, long nr,
-			 struct io_event *events, struct timespec *tmo)
+static long io_getevents(__attribute__((unused)) aio_context_t ctx,
+			 __attribute__((unused)) long min_nr,
+			 __attribute__((unused)) long nr,
+			 __attribute__((unused)) struct io_event *events,
+			 __attribute__((unused)) struct timespec *tmo)
 {
+#ifdef __NR_io_getevents
 	return syscall(__NR_io_getevents, ctx, min_nr, nr, events, tmo);
+#else
+	return -ENOSYS;
+#endif
 }
 
 static long io_setup(unsigned nr_reqs, aio_context_t *ctx)
