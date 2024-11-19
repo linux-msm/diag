@@ -59,9 +59,14 @@
 #define DIAG_FEATURE_DCI_EXTENDED_HEADER			BIT(14)
 #define DIAG_FEATURE_DIAG_ID					BIT(15)
 #define DIAG_FEATURE_PKT_HEADER_UNTAG				BIT(16)
+#define DIAG_FEATURE_DIAG_ID_FEATURE_MASK			BIT(19)
 
 #define DIAG_CMD_SUBSYS_DISPATCH       75
 #define DIAG_CMD_SUBSYS_DISPATCH_V2	128
+
+#define DIAG_MAX_REQ_SIZE	(16 * 1024)
+#define DIAG_MAX_RSP_SIZE	(16 * 1024)
+#define DIAG_ID_APPS 1
 
 struct diag_client;
 
@@ -88,6 +93,8 @@ struct peripheral {
 	int diag_id;
 
 	bool sockets;
+
+	uint8_t diagid_v2_feature_flag;
 
 	struct circ_buf recv_buf;
 	struct hdlc_decoder recv_decoder;
