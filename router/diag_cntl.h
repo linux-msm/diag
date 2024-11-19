@@ -35,6 +35,27 @@
 #include "peripheral.h"
 #include "masks.h"
 
+#define DIAG_ID_VERSION_1	1
+#define DIAG_ID_VERSION_2	2
+#define DIAG_ID_VERSION_3	3
+#define DIAG_ID_APPS	1
+
+#define DIAG_MAX_REQ_SIZE	(16 * 1024)
+#define DIAG_MAX_RSP_SIZE	(16 * 1024)
+
+struct diag_id_info
+{
+	uint8_t diag_id;
+	uint8_t process_name_len;
+	char process_name[];
+};
+
+struct diag_id_tbl_t {
+	struct list_head node;
+	uint8_t diag_id_info_len;
+	struct diag_id_info diagid_info;
+};
+
 int diag_cntl_recv(struct peripheral *perif, const void *buf, size_t len);
 void diag_cntl_send_log_mask(struct peripheral *peripheral, uint32_t equip_id);
 void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_range_t *range);
@@ -45,5 +66,7 @@ void diag_cntl_send_masks(struct peripheral *peripheral);
 
 void diag_cntl_set_diag_mode(struct peripheral *perif, bool real_time);
 void diag_cntl_set_buffering_mode(struct peripheral *perif, int mode);
+
+struct list_head *diag_get_diag_ids_head(void);
 
 #endif
