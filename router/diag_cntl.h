@@ -35,6 +35,24 @@
 #include "peripheral.h"
 #include "masks.h"
 
+struct diag_id_tbl_t {
+	struct list_head link;
+	uint8_t diag_id;
+	uint8_t pd_val;
+	uint32_t periph_id;
+	uint8_t pd_feature_mask;
+	char *process_name;
+} __packed;
+
+struct diag_id_t {
+	uint8_t diag_id;
+	uint8_t len;
+	char *process_name;
+} __packed;
+
+extern struct list_head g_diag_id_list;
+int diag_add_diag_id_to_list(uint8_t diag_id, char *process_name, uint8_t pd_val, struct peripheral *perif);
+
 int diag_cntl_recv(struct peripheral *perif, const void *buf, size_t len);
 void diag_cntl_send_log_mask(struct peripheral *peripheral, uint32_t equip_id);
 void diag_cntl_send_msg_mask(struct peripheral *peripheral, struct diag_ssid_range_t *range);
