@@ -53,8 +53,6 @@
 #define DIAG_INSTANCE_BASE_SENSORS	192
 #define DIAG_INSTANCE_BASE_CDSP		256
 #define DIAG_INSTANCE_BASE_WDSP		320
-#define DIAG_INSTANCE_BASE_GPDSP0	512
-#define DIAG_INSTANCE_BASE_GPDSP1	576
 
 enum {
 	DIAG_INSTANCE_CNTL,
@@ -288,7 +286,6 @@ static int qrtr_perif_init_subsystem(const char *name, int instance_base)
 	perif->close = qrtr_perif_close;
 	perif->sockets = true;
 	perif->flow = flow;
-	perif->diagid_v2_feature_flag = 0;
 
 	list_init(&perif->cmdq);
 	list_init(&perif->cntlq);
@@ -336,8 +333,6 @@ int peripheral_qrtr_init(void)
 	qrtr_perif_init_subsystem("sensors", DIAG_INSTANCE_BASE_SENSORS);
 	qrtr_perif_init_subsystem("cdsp", DIAG_INSTANCE_BASE_CDSP);
 	qrtr_perif_init_subsystem("wdsp", DIAG_INSTANCE_BASE_WDSP);
-	qrtr_perif_init_subsystem("gpdsp0", DIAG_INSTANCE_BASE_GPDSP0);
-	qrtr_perif_init_subsystem("gpdsp1", DIAG_INSTANCE_BASE_GPDSP1);
 
 	return 0;
 }

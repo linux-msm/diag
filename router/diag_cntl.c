@@ -609,56 +609,7 @@ static int diag_query_pd_name(char *process_name, char *search_str)
 	return 0;
 }
 
-int diag_query_pd(char *process_name)
-{
-	if (!process_name)
-		return -EINVAL;
-
-	if (diag_query_pd_name(process_name, "apps"))
-		return PERIPHERAL_APPS;
-	if (diag_query_pd_name(process_name, "modem/root_pd"))
-		return PERIPHERAL_MODEM;
-	if (diag_query_pd_name(process_name, "adsp/root_pd"))
-		return PERIPHERAL_LPASS;
-	if (diag_query_pd_name(process_name, "wpss/root_pd"))
-		return PERIPHERAL_WCNSS;
-	if (diag_query_pd_name(process_name, "slpi/root_pd"))
-		return PERIPHERAL_SENSORS;
-	if (diag_query_pd_name(process_name, "cdsp/root_pd"))
-		return PERIPHERAL_CDSP;
-	if (diag_query_pd_name(process_name, "npu/root_pd"))
-		return PERIPHERAL_NPU;
-	if (diag_query_pd_name(process_name, "cdsp1/root_pd"))
-		return PERIPHERAL_NSP1;
-	if (diag_query_pd_name(process_name, "gpdsp/root_pd"))
-		return PERIPHERAL_GPDSP0;
-	if (diag_query_pd_name(process_name, "gpdsp1/root_pd"))
-		return PERIPHERAL_GPDSP1;
-	if (diag_query_pd_name(process_name, "tele-gvm"))
-		return PERIPHERAL_TELE_GVM;
-	if (diag_query_pd_name(process_name, "fota-gvm"))
-		return PERIPHERAL_FOTA_GVM;
-	if (diag_query_pd_name(process_name, "soccp/root_pd"))
-		return PERIPHERAL_SOCCP;
-	if (diag_query_pd_name(process_name, "wlan_pd"))
-		return UPD_PERIPHERAL_WLAN;
-	if (diag_query_pd_name(process_name, "audio_pd"))
-		return UPD_PERIPHERAL_AUDIO;
-	if (diag_query_pd_name(process_name, "sensor_pd"))
-		return UPD_PERIPHERAL_SENSORS;
-	if (diag_query_pd_name(process_name, "charger_pd"))
-		return UPD_PERIPHERAL_CHARGER;
-	if (diag_query_pd_name(process_name, "oem_pd"))
-		return UPD_PERIPHERAL_OEM;
-	if (diag_query_pd_name(process_name, "ois_pd"))
-		return UPD_PERIPHERAL_OIS;
-	if (diag_query_pd_name(process_name, "ois_pd"))
-		return UPD_PERIPHERAL_OIS;
-
-	return PD_UNKNOWN;
-}
-
-int diag_add_diag_id_to_list(uint8_t diag_id, char *process_name, uint8_t pd_val, struct peripheral *perif)
+int diag_add_diag_id_to_list(uint8_t diag_id, char *process_name, struct peripheral *perif)
 {
 	struct diag_id_tbl_t *new_diagid = NULL;
 	int process_len = 0;
@@ -680,7 +631,6 @@ int diag_add_diag_id_to_list(uint8_t diag_id, char *process_name, uint8_t pd_val
 	}
 
 	new_diagid->diag_id = diag_id;
-	new_diagid->pd_val = pd_val;
 	(void)strlcpy(new_diagid->process_name, process_name, process_len + 1);
 	list_add(&g_diag_id_list, &new_diagid->link);
 
@@ -715,7 +665,7 @@ static int diag_cntl_process_diag_id(struct peripheral *peripheral, struct diag_
 	char *process_name = NULL;
 	uint8_t local_diag_id = 0;
 	static uint8_t diag_id = DIAG_ID_APPS;
-	int pd_val, ret;
+	int ret;
 
 	if (pkt == NULL || len == 0)
 		return -EINVAL;
@@ -744,10 +694,7 @@ static int diag_cntl_process_diag_id(struct peripheral *peripheral, struct diag_
 		else
 			diag_id++;
 
-		pd_val = diag_query_pd(process_name);
-		if (pd_val < 0)
-			return -EINVAL;
-		if (diag_add_diag_id_to_list(diag_id, process_name, pd_val, peripheral))
+		if (diag_add_diag_id_to_list(diag_id, process_name, peripheral))
 			return -EINVAL;
 		local_diag_id = diag_id;
 	}

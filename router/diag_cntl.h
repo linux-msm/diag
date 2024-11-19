@@ -51,7 +51,6 @@ struct diag_id_t {
 } __packed;
 
 extern struct list_head g_diag_id_list;
-int diag_add_diag_id_to_list(uint8_t diag_id, char *process_name, uint8_t pd_val, struct peripheral *perif);
 
 int diag_cntl_recv(struct peripheral *perif, const void *buf, size_t len);
 void diag_cntl_send_log_mask(struct peripheral *peripheral, uint32_t equip_id);
