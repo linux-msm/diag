@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "diag.h"
+#include "diag_cntl.h"
 #include "dm.h"
 #include "hdlc.h"
 #include "util.h"
@@ -51,6 +52,9 @@
 #define MOBILE_SOFTWARE_REVISION	"OE"
 #define MOBILE_MODEL_STRING		"DB410C"
 #define MSM_REVISION_NUMBER		2
+
+#define DIAG_CMD_DIAG_SUBSYS	18
+#define DIAG_CMD_DIAG_GET_DIAG_ID	0x222
 
 static int handle_diag_version(struct diag_client *client, const void *buf,
 			       size_t len)
@@ -117,6 +121,48 @@ static int handle_keep_alive(struct diag_client *client, const void *buf,
 	return dm_send(client, resp, sizeof(resp));
 }
 
+static int handle_diag_id(struct diag_client *client, const void *buf, size_t len)
+{
+	struct diag_id_query_req {
+		uint8_t cmd_code;
+		uint8_t subsys_id;
+		uint16_t subsys_cmd_code;
+		uint8_t version;
+	} __packed;
+	struct diag_id_query_resp {
+		struct diag_id_query_req req_info;
+		uint8_t num_entries;
+		uint8_t payload[];
+	} __packed;
+	struct diag_id_tbl_t *diag_id_item = NULL;
+	struct list_head *diag_ids_head = NULL;
+	uint8_t resp_buffer[DIAG_MAX_RSP_SIZE] = {0};
+	uint8_t *offset_resp;
+	size_t resp_len = 0;
+	int num_entries = 0;
+
+	if (!buf || len < sizeof(struct diag_id_query_req))
+		return -EMSGSIZE;
+
+	struct diag_id_query_req *req = (struct diag_id_query_req *)buf;
+	struct diag_id_query_resp *resp = (struct diag_id_query_resp *)resp_buffer;
+	memcpy(resp_buffer, req, sizeof(struct diag_id_query_req));
+	offset_resp = (uint8_t *)resp_buffer;
+	resp_len = offsetof(struct diag_id_query_resp, payload);
+
+	diag_ids_head = diag_get_diag_ids_head();
+	list_for_each_entry(diag_id_item, diag_ids_head, node) {
+		if (resp_len >= DIAG_MAX_RSP_SIZE)
+			break;
+		memcpy(offset_resp + resp_len, &diag_id_item->diagid_info, diag_id_item->diag_id_info_len);
+		resp_len += diag_id_item->diag_id_info_len;
+		num_entries++;
+	}
+	resp->num_entries = num_entries;
+
+	return dm_send(client, resp_buffer, resp_len);
+}
+
 void register_app_cmds(void)
 {
 	register_fallback_cmd(DIAG_CMD_DIAG_VERSION_ID, handle_diag_version);
@@ -124,4 +170,6 @@ void register_app_cmds(void)
 	register_fallback_cmd(DIAG_CMD_EXTENDED_BUILD_ID, handle_extended_build_id);
 	register_fallback_subsys_cmd(DIAG_CMD_KEEP_ALIVE_SUBSYS,
 				     DIAG_CMD_KEEP_ALIVE_CMD, handle_keep_alive);
+	register_fallback_subsys_cmd(DIAG_CMD_DIAG_SUBSYS,
+				     DIAG_CMD_DIAG_GET_DIAG_ID, handle_diag_id);
 }
