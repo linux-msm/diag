@@ -63,6 +63,8 @@ struct diag_client {
 
 struct list_head diag_clients = LIST_INIT(diag_clients);
 
+#define DATA_TYPE_PASSTHRU_CONTROL 43
+
 /**
  * dm_add() - register new DM
  * @dm:		DM object to register
@@ -123,11 +125,35 @@ static int dm_recv_hdlc(struct diag_client *dm)
 	return ret;
 }
 
+void diag_send_passthru_control_pkt(struct diag_client *dm, struct diag_hw_accel_cmd_req_t *req_params, int len)
+{
+	struct diag_hw_diag_id_mask
+	{
+		int data_type;
+		int ret_val;
+		uint32_t diagid_mask;
+	};
+	struct diag_hw_diag_id_mask params;
+	int ret;
+
+	ret = diag_cntl_send_passthru_control_pkt(req_params);
+	params.data_type = APPS_PKT_TYPE_PASSTHRU_MASK;
+	params.ret_val = ret;
+	params.diagid_mask = req_params->op_req.diagid_mask;
+
+	dm_send(dm, &params, sizeof(params));
+}
+
 static int dm_recv_raw(struct diag_client *dm)
 {
 	int saved_errno;
 	unsigned char buf[4096];
 	ssize_t n;
+	struct dm_pkt{
+		int type;
+		unsigned char pkt;
+	};
+	struct dm_pkt *dmpkt;
 
 	for (;;) {
 		n = read(dm->in_fd, buf, sizeof(buf));
@@ -140,6 +166,15 @@ static int dm_recv_raw(struct diag_client *dm)
 			saved_errno = -errno;
 			warn("Failed to read from %s\n", dm->name);
 			return saved_errno;
+		}
+
+		dmpkt = (struct dm_pkt *)buf;
+		switch (dmpkt->type) {
+			case DATA_TYPE_PASSTHRU_CONTROL:
+				diag_send_passthru_control_pkt(dm, buf + 4, n - 4);
+				break;
+			default:
+				break;
 		}
 
 		diag_client_handle_command(dm, buf, n);
