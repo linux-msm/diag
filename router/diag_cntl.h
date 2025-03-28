@@ -68,5 +68,6 @@ void diag_cntl_set_diag_mode(struct peripheral *perif, bool real_time);
 void diag_cntl_set_buffering_mode(struct peripheral *perif, int mode);
 
 struct list_head *diag_get_diag_ids_head(void);
+int diag_cntl_send_passthru_control_pkt(struct diag_hw_accel_cmd_req_t *req_params);
 
 #endif

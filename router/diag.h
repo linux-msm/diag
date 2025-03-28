@@ -64,6 +64,67 @@
 #define DIAG_CMD_SUBSYS_DISPATCH       75
 #define DIAG_CMD_SUBSYS_DISPATCH_V2	128
 
+#define DIAG_CMD_DIAG_SUBSYS	18
+#define DIAG_HW_ACCEL_CMD		0x224
+
+#define DIAG_CTRL_MSG_PASS_THRU		35
+
+#define APPS_PKT_TYPE_PASSTHRU_MASK		0x00002000
+/*
+ * HW Acceleration cmd versions definition
+ */
+enum {
+	HW_ACCEL_CMD_VER_1 = 1,
+	HW_ACCEL_CMD_VER_2,
+} hw_accel_cmd_ver;
+
+#define HW_ACCEL_CMD_VER_MIN	HW_ACCEL_CMD_VER_1
+#define HW_ACCEL_CMD_VER_MAX	HW_ACCEL_CMD_VER_2
+
+/*
+ * HW Acceleration operation definition
+ */
+#define DIAG_HW_ACCEL_OP_DISABLE	0
+#define DIAG_HW_ACCEL_OP_ENABLE		1
+#define DIAG_HW_ACCEL_OP_QUERY		2
+
+/*
+ * HW Acceleration TYPE definition
+ */
+#define DIAG_HW_ACCEL_TYPE_ALL	0
+#define DIAG_HW_ACCEL_TYPE_STM	1
+#define DIAG_HW_ACCEL_TYPE_ATB	2
+#define DIAG_HW_ACCEL_TYPE_MAX	2
+#define DIAG_HW_ACCEL_VER_1		1
+
+#define DIAGID_FEATURE_COUNT	3
+
+struct diag_pkt_header_t {
+	uint8_t cmd_code;
+	uint8_t subsys_id;
+	uint16_t subsys_cmd_code;
+};
+
+struct diag_hw_accel_op_t {
+	uint8_t hw_accel_type;
+	uint8_t hw_accel_ver;
+	uint32_t diagid_mask;
+};
+
+struct diag_hw_accel_cmd_req_t {
+	struct diag_pkt_header_t header;
+	uint8_t version;
+	uint8_t operation;
+	uint16_t reserved;
+	struct diag_hw_accel_op_t op_req;
+};
+
+struct diag_global_info {
+	uint32_t diagid_feature[DIAGID_FEATURE_COUNT];
+	uint32_t diagid_status[DIAGID_FEATURE_COUNT];
+	uint32_t diag_hw_accel[DIAGID_FEATURE_COUNT];	
+};
+
 struct diag_client;
 
 struct peripheral {
@@ -138,5 +199,7 @@ void register_common_cmd(unsigned int cmd, int(*cb)(struct diag_client *client,
 
 void register_app_cmds(void);
 void register_common_cmds(void);
+
+struct diag_global_info *diag_get_global_info(void);
 
 #endif

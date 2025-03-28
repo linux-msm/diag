@@ -53,7 +53,6 @@
 #define MOBILE_MODEL_STRING		"DB410C"
 #define MSM_REVISION_NUMBER		2
 
-#define DIAG_CMD_DIAG_SUBSYS	18
 #define DIAG_CMD_DIAG_GET_DIAG_ID	0x222
 
 static int handle_diag_version(struct diag_client *client, const void *buf,
