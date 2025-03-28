@@ -129,11 +129,18 @@ int main(int argc, char **argv)
 			errx(1, "failed to open uart\n");
 	}
 
+	diag_info = calloc(1, sizeof(*diag_info));
+	if (!diag_info)
+		errx(1, "failed to allocate memory for diag_info\n");
+
 	diag_usb_open("/dev/ffs-diag");
 
 	ret = diag_unix_open();
-	if (ret < 0)
+	if (ret < 0) {
+		free(diag_info);
+		diag_info = NULL;
 		errx(1, "failed to create unix socket dm\n");
+	}
 
 	peripheral_init();
 
@@ -144,5 +151,7 @@ int main(int argc, char **argv)
 
 	watch_run();
 
+	free(diag_info);
+	diag_info = NULL;
 	return 0;
 }
