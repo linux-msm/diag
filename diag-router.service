@@ -1,0 +1,11 @@
+[Unit]
+Description=Routing of diagnostics related messages between host and various subsystems
+Before=rmtfs.service
+
+[Service]
+ExecStart=/usr/bin/diag-router
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
