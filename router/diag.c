@@ -47,6 +47,54 @@
 
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 
+static size_t iovec_total_len(struct iovec *iov, int iovcnt)
+{
+	size_t total = 0;
+
+	for (int i = 0; i < iovcnt; i++) {
+		total += iov[i].iov_len;
+	}
+
+	return total;
+}
+
+void queue_push_sg_flow(struct list_head *queue, struct iovec *iov, int iovcnt,
+			 struct watch_flow *flow)
+{
+	struct mbuf *mbuf;
+	void *ptr, *src;
+	size_t iovec_len, len;
+	size_t offset = 0;
+
+	iovec_len = iovec_total_len(iov, iovcnt);
+	mbuf = mbuf_alloc(sizeof(*mbuf) + iovec_len);
+	if (!mbuf) {
+		warnx("Diag: %s: failed to allocate memory", __func__);
+		return;
+	}
+
+	ptr = mbuf_put(mbuf, sizeof(*mbuf) + iovec_len);
+	if (!ptr) {
+		warnx("Diag: invalid ptr, dropping pkt of len: %zu\n", sizeof(*mbuf) + iovec_len);
+		free(mbuf);
+		return;
+	}
+
+	for (int i = 0; i < iovcnt; ++i) {
+		src = iov[i].iov_base;
+		len = iov[i].iov_len;
+		memcpy(ptr + offset, src, len);
+		offset += len;
+	}
+
+	mbuf->offset = offset;
+	mbuf->size = iovec_len;
+	mbuf->flow = flow;
+
+	watch_flow_inc(flow);
+	list_add(queue, &mbuf->node);
+}
+
 void queue_push_flow(struct list_head *queue, const void *msg, size_t msglen,
 		     struct watch_flow *flow)
 {

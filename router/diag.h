@@ -34,6 +34,7 @@
 
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 
 #include "circ_buf.h"
 #include "hdlc.h"
