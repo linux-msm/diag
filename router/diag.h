@@ -65,6 +65,8 @@
 #define DIAG_CMD_SUBSYS_DISPATCH       75
 #define DIAG_CMD_SUBSYS_DISPATCH_V2	128
 
+#define NHDLC_CONTROL_CHAR		0x7E
+
 struct diag_client;
 
 struct peripheral {
@@ -110,6 +112,13 @@ struct diag_cmd {
 	int(*cb)(struct diag_client *client, const void *buf, size_t len);
 };
 
+struct diag_pkt_frame {
+	uint8_t start;
+	uint8_t version;
+	uint16_t length;
+	unsigned char data[0];
+} __packed;
+
 void queue_push(struct list_head *queue, const void *msg, size_t msglen);
 void queue_push_flow(struct list_head *queue, const void *msg, size_t msglen,
 		     struct watch_flow *flow);
@@ -125,6 +134,8 @@ int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t
 
 int hdlc_enqueue(struct list_head *queue, const void *buf, size_t msglen);
 int hdlc_enqueue_flow(struct list_head *queue, const void *buf, size_t msglen,
+		 struct watch_flow *flow);
+int nhdlc_enqueue_flow(struct list_head *queue, const void *msg, size_t msglen,
 		 struct watch_flow *flow);
 
 void register_fallback_cmd(unsigned int cmd,

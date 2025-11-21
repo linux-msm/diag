@@ -34,14 +34,23 @@
 
 #include "diag.h"
 
+enum diag_encode_type {
+	DIAG_ENCODE_RAW = 1,
+	DIAG_ENCODE_HDLC,
+	DIAG_ENCODE_NHDLC,
+};
+
 struct diag_client;
 
 struct diag_client *dm_add(const char *name, int in_fd, int out_fd, bool hdlc_encoded);
 int dm_recv(int fd, void* data);
-ssize_t dm_send(struct diag_client *dm, const void *ptr, size_t len);
+int dm_send(struct diag_client *dm, const void *ptr, size_t len);
 void dm_broadcast(const void *ptr, size_t len, struct watch_flow *flow);
 void dm_enable(struct diag_client *dm);
 void dm_disable(struct diag_client *dm);
+
+int dm_decode_data(struct diag_client *dm, struct circ_buf *buf);
+void set_encode_type(int type);
 
 #endif
 

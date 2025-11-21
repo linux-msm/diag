@@ -54,6 +54,8 @@
 #define MSM_REVISION_NUMBER		2
 
 #define DIAG_CMD_DIAG_SUBSYS	18
+
+#define DIAG_CMD_OP_HDLC_DISABLE	0x218
 #define DIAG_CMD_DIAG_GET_DIAG_ID	0x222
 
 static int handle_diag_version(struct diag_client *client, const void *buf,
@@ -163,6 +165,34 @@ static int handle_diag_id(struct diag_client *client, const void *buf, size_t le
 	return dm_send(client, resp_buffer, resp_len);
 }
 
+static int handle_hdlc_disable_cmd(struct diag_client *client, const void *buf, size_t len)
+{
+	struct hdlc_disable_req {
+		uint8_t cmd_code;
+		uint8_t subsys_id;
+		uint16_t subsys_cmd_code;
+	} __packed;
+	struct hdlc_disable_resp {
+		struct hdlc_disable_req req_info;
+		uint8_t version;
+		uint8_t result;
+	} __packed;
+	struct hdlc_disable_req *req = (struct hdlc_disable_req *)buf;
+	struct hdlc_disable_resp resp = {0};
+	int ret;
+
+	if (!buf || len < sizeof(*req))
+		return -EMSGSIZE;
+
+	memcpy(&resp.req_info, req, sizeof(*req));
+	resp.version = 1;
+	resp.result = 0;
+	ret = dm_send(client, (unsigned char *)&resp, sizeof(resp));
+
+	set_encode_type(DIAG_ENCODE_NHDLC);
+	return ret;
+}
+
 void register_app_cmds(void)
 {
 	register_fallback_cmd(DIAG_CMD_DIAG_VERSION_ID, handle_diag_version);
@@ -172,4 +202,6 @@ void register_app_cmds(void)
 				     DIAG_CMD_KEEP_ALIVE_CMD, handle_keep_alive);
 	register_fallback_subsys_cmd(DIAG_CMD_DIAG_SUBSYS,
 				     DIAG_CMD_DIAG_GET_DIAG_ID, handle_diag_id);
+	register_fallback_subsys_cmd(DIAG_CMD_DIAG_SUBSYS,
+				     DIAG_CMD_OP_HDLC_DISABLE, handle_hdlc_disable_cmd);
 }

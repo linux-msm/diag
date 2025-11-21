@@ -95,6 +95,29 @@ void queue_push_sg_flow(struct list_head *queue, struct iovec *iov, int iovcnt,
 	list_add(queue, &mbuf->node);
 }
 
+int nhdlc_enqueue_flow(struct list_head *queue, const void *msg, size_t msglen,
+			struct watch_flow *flow)
+{
+	struct diag_pkt_frame header = {0};
+	uint8_t tail = NHDLC_CONTROL_CHAR;
+	struct iovec iov[3];
+
+	header.start = NHDLC_CONTROL_CHAR;
+	header.version = 1;
+	header.length = msglen;
+
+	iov[0].iov_base = &header;
+	iov[0].iov_len = sizeof(header);
+	iov[1].iov_base = msg;
+	iov[1].iov_len = msglen;
+	iov[2].iov_base = &tail;
+	iov[2].iov_len = sizeof(uint8_t);
+
+	queue_push_sg_flow(queue, iov, sizeof(iov) / sizeof(iov[0]), flow);
+
+	return 0;
+}
+
 void queue_push_flow(struct list_head *queue, const void *msg, size_t msglen,
 		     struct watch_flow *flow)
 {

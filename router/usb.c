@@ -278,29 +278,14 @@ err_out:
 
 static int diag_ffs_recv(struct mbuf *mbuf, void *data)
 {
-	struct hdlc_decoder recv_decoder;
-	struct circ_buf recv_buf;
+	struct circ_buf recv_buf = {0};
 	struct usb_handle *ffs = data;
-	size_t msglen;
-	void *msg;
-
-	memset(&recv_decoder, 0, sizeof(recv_decoder));
 
 	memcpy(recv_buf.buf, mbuf->data, mbuf->offset);
 	recv_buf.tail = 0;
 	recv_buf.head = mbuf->offset;
 
-	// print_hex_dump("[USB]", mbuf->data, mbuf->offset);
-
-	for (;;) {
-		msg = hdlc_decode_one(&recv_decoder, &recv_buf, &msglen);
-		if (!msg)
-			break;
-
-		// print_hex_dump("  [MSG]", msg, MIN(msglen, 256));
-
-		diag_client_handle_command(ffs->dm, msg, msglen);
-	}
+	dm_decode_data(ffs->dm, &recv_buf);
 
 	mbuf->offset = 0;
 	list_add(&ffs->outq, &mbuf->node);
