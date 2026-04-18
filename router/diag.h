@@ -135,8 +135,8 @@ int diag_client_handle_command(struct diag_client *client, uint8_t *data, size_t
 int hdlc_enqueue(struct list_head *queue, const void *buf, size_t msglen);
 int hdlc_enqueue_flow(struct list_head *queue, const void *buf, size_t msglen,
 		 struct watch_flow *flow);
-int nhdlc_enqueue_flow(struct list_head *queue, const void *msg, size_t msglen,
-		 struct watch_flow *flow);
+void queue_push_nhdlc_flow(struct list_head *queue, const void *msg, size_t msglen,
+			struct watch_flow *flow);
 
 void register_fallback_cmd(unsigned int cmd,
 			   int(*cb)(struct diag_client *client,

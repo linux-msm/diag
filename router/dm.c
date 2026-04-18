@@ -254,7 +254,7 @@ static int dm_send_flow(struct diag_client *dm, const void *ptr, size_t len,
 		hdlc_enqueue_flow(&dm->outq, ptr, len, flow);
 		break;
 	case DIAG_ENCODE_NHDLC:
-		nhdlc_enqueue_flow(&dm->outq, ptr, len, flow);
+		queue_push_nhdlc_flow(&dm->outq, ptr, len, flow);
 		break;
 	default:
 		warn("Diag: send error encode type %d\n", dm->encode_type);
