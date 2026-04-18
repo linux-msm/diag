@@ -47,75 +47,48 @@
 
 struct list_head diag_cmds = LIST_INIT(diag_cmds);
 
-static size_t iovec_total_len(struct iovec *iov, int iovcnt)
+void queue_push_nhdlc_flow(struct list_head *queue, const void *msg, size_t msglen,
+			struct watch_flow *flow)
 {
-	size_t total = 0;
+	size_t len;
+	size_t off = 0;
+	struct mbuf *mbuf = NULL;
+	uint8_t *ptr = NULL;
 
-	for (int i = 0; i < iovcnt; i++) {
-		total += iov[i].iov_len;
-	}
+	len = msglen + sizeof(struct diag_pkt_frame) + sizeof(uint8_t);
 
-	return total;
-}
-
-void queue_push_sg_flow(struct list_head *queue, struct iovec *iov, int iovcnt,
-			 struct watch_flow *flow)
-{
-	struct mbuf *mbuf;
-	void *ptr, *src;
-	size_t iovec_len, len;
-	size_t offset = 0;
-
-	iovec_len = iovec_total_len(iov, iovcnt);
-	mbuf = mbuf_alloc(sizeof(*mbuf) + iovec_len);
+	mbuf = mbuf_alloc(len);
 	if (!mbuf) {
 		warnx("Diag: %s: failed to allocate memory", __func__);
 		return;
 	}
 
-	ptr = mbuf_put(mbuf, sizeof(*mbuf) + iovec_len);
+	ptr = mbuf_put(mbuf, len);
 	if (!ptr) {
-		warnx("Diag: invalid ptr, dropping pkt of len: %zu\n", sizeof(*mbuf) + iovec_len);
+		warnx("Diag: %s: invalid ptr, dropping pkt of len: %zu\n", __func__, len);
 		free(mbuf);
 		return;
 	}
 
-	for (int i = 0; i < iovcnt; ++i) {
-		src = iov[i].iov_base;
-		len = iov[i].iov_len;
-		memcpy(ptr + offset, src, len);
-		offset += len;
-	}
+	struct diag_pkt_frame *header = (struct diag_pkt_frame *)ptr;
 
-	mbuf->offset = offset;
-	mbuf->size = iovec_len;
+	header->start = NHDLC_CONTROL_CHAR;
+	header->version = 1;
+	header->length = msglen;
+
+	off += sizeof(struct diag_pkt_frame);
+	/* copy the actual packet */
+	memcpy(ptr + off, msg, msglen);
+	off += msglen; 
+
+	((uint8_t *)ptr)[off] = NHDLC_CONTROL_CHAR;
+	off += sizeof(uint8_t);
+
+	mbuf->offset = off;
 	mbuf->flow = flow;
-
+	
 	watch_flow_inc(flow);
 	list_add(queue, &mbuf->node);
-}
-
-int nhdlc_enqueue_flow(struct list_head *queue, const void *msg, size_t msglen,
-			struct watch_flow *flow)
-{
-	struct diag_pkt_frame header = {0};
-	uint8_t tail = NHDLC_CONTROL_CHAR;
-	struct iovec iov[3];
-
-	header.start = NHDLC_CONTROL_CHAR;
-	header.version = 1;
-	header.length = msglen;
-
-	iov[0].iov_base = &header;
-	iov[0].iov_len = sizeof(header);
-	iov[1].iov_base = msg;
-	iov[1].iov_len = msglen;
-	iov[2].iov_base = &tail;
-	iov[2].iov_len = sizeof(uint8_t);
-
-	queue_push_sg_flow(queue, iov, sizeof(iov) / sizeof(iov[0]), flow);
-
-	return 0;
 }
 
 void queue_push_flow(struct list_head *queue, const void *msg, size_t msglen,
