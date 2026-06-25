@@ -53,6 +53,7 @@
 #define DIAG_INSTANCE_BASE_SENSORS	192
 #define DIAG_INSTANCE_BASE_CDSP		256
 #define DIAG_INSTANCE_BASE_WDSP		320
+#define DIAG_INSTANCE_BASE_SOCCP	832
 
 enum {
 	DIAG_INSTANCE_CNTL,
@@ -333,6 +334,7 @@ int peripheral_qrtr_init(void)
 	qrtr_perif_init_subsystem("sensors", DIAG_INSTANCE_BASE_SENSORS);
 	qrtr_perif_init_subsystem("cdsp", DIAG_INSTANCE_BASE_CDSP);
 	qrtr_perif_init_subsystem("wdsp", DIAG_INSTANCE_BASE_WDSP);
+	qrtr_perif_init_subsystem("soccp", DIAG_INSTANCE_BASE_SOCCP);
 
 	return 0;
 }
